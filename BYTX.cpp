@@ -8,7 +8,7 @@
 #include <string>
 #include <cstring>
 #define debug(x) cout << #x << '\t' << x << "\n";
-#define Test cout << "this is a test line\n"
+#define Test cout << "this is a test line\n";
 using namespace std;
 
 string get_pwd();
@@ -23,12 +23,13 @@ string get_pwd()
     s = char_get_pwd;
     return s;
 }
+
 bool create_file(string _pwd, string _file_name)
 {
     cout << "Create " << _file_name << " at " << _pwd << "\n";
-    string make_new_file="echo >>"+_file_name;
-    
-    int status = system("echo >>index.html");
+    string make_new_file="echo >>"+_pwd+"\\"+_file_name;
+    char * _make_new_file=strcpy(_make_new_file,make_new_file.c_str());
+    int status = system(_make_new_file);
     if (status != 0)
     {
         cout << "Init Error\nPlease fix the problem and try again";
@@ -37,6 +38,12 @@ bool create_file(string _pwd, string _file_name)
     cout << "Successfully create index.html\n";
     return true;
 }
+
+bool create_folder(string _pwd,string _folder_name){
+    cout<<"Create "<<_folder_name<<" at "<<_pwd<<endl;
+    
+}
+
 void init()
 {
     /**操作解释：
@@ -49,14 +56,17 @@ void init()
      * _pwd 路径
      * status 判定system返回值
      **/
-
+    int status;
     string _pwd = get_pwd();
 
     cout << "Init at " << _pwd << endl;
 
+    create_file(_pwd,"index.html");
+    cout<<"dfsdfdfdfd"<<endl;
+    Test
     const char *_make_file = "md _file";
     cout << "Create _file folder\n";
-    int status = system(_make_file);
+    status = system(_make_file);
     if (status != 0)
     {
         cout << "Init Error\nPlease fix the problem and try again";
@@ -65,6 +75,7 @@ void init()
     cout << "Successfully create _file folder\n";
 
     const char *_make_file_html = "md _file_html";
+    
     status = system(_make_file_html);
     if (status != 0)
     {
@@ -101,6 +112,8 @@ int main(int argc, char *argv[])
 {
     string s = argv[1];
     //init 无参数指令 初始化
+    // init();
+    // system("pause");
     if (s == "init")
     {
         try
