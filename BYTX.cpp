@@ -13,7 +13,7 @@ using namespace std;
 
 string get_pwd();
 void init();
-bool create_file(string _file_name);
+bool create_file(string _pwd,string name);
 
 string get_pwd()
 {
@@ -24,24 +24,19 @@ string get_pwd()
     return s;
 }
 
-bool create_file(string _pwd, string _file_name)
-{
-    cout << "Create " << _file_name << " at " << _pwd << "\n";
-    string make_new_file="echo >>"+_pwd+"\\"+_file_name;
-    char * _make_new_file=strcpy(_make_new_file,make_new_file.c_str());
-    int status = system(_make_new_file);
-    if (status != 0)
-    {
-        cout << "Init Error\nPlease fix the problem and try again";
+bool create_file(string _pwd,string name){
+    cout<<"Create "<<name<<" at "<<_pwd<<"\n";
+    string _echo_="echo >>"+_pwd+"\\"+name;
+    char x[10000];
+    strcpy(x,_echo_.c_str());
+    bool _if_ok=system(x);
+    if(_if_ok==0){
+        cout<<"Successfully create "<<name<<" at "<<_pwd<<endl;
+    }
+    else{
         return false;
     }
-    cout << "Successfully create index.html\n";
-    return true;
-}
 
-bool create_folder(string _pwd,string _folder_name){
-    cout<<"Create "<<_folder_name<<" at "<<_pwd<<endl;
-    
 }
 
 void init()
@@ -54,16 +49,13 @@ void init()
      * 
      * var：
      * _pwd 路径
-     * status 判定system返回值
+     * status 判定system返回
      **/
     int status;
     string _pwd = get_pwd();
 
     cout << "Init at " << _pwd << endl;
-
     create_file(_pwd,"index.html");
-    cout<<"dfsdfdfdfd"<<endl;
-    Test
     const char *_make_file = "md _file";
     cout << "Create _file folder\n";
     status = system(_make_file);
@@ -83,14 +75,14 @@ void init()
         return;
     }
 
-    cout << "Create index.html\n";
-    status = system("echo >>index.html");
-    if (status != 0)
-    {
-        cout << "Init Error\nPlease fix the problem and try again";
-        return;
-    }
-    cout << "Successfully create index.html\n";
+    // cout << "Create index.html\n";
+    // status = system("echo >>index.html");
+    // if (status != 0)
+    // {
+    //     cout << "Init Error\nPlease fix the problem and try again";
+    //     return;
+    // }
+    // cout << "Successfully create index.html\n";
 
     // string create_file = "echo >>" + _pwd + "\\_file\\d.txt";
     // char c[100];
@@ -112,8 +104,6 @@ int main(int argc, char *argv[])
 {
     string s = argv[1];
     //init 无参数指令 初始化
-    // init();
-    // system("pause");
     if (s == "init")
     {
         try
@@ -128,6 +118,6 @@ int main(int argc, char *argv[])
             exit(0);
         }
     }
-    // cout<<"test"<<endl;
+    cout<<"test"<<endl;
     return 0;
 }
