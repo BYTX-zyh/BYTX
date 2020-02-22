@@ -1,11 +1,7 @@
-/**
- * author:BYTX
- * 
- * 
- * */
 #include <iostream>
 #include <direct.h>
 #include <string>
+#include <io.h>
 #include <cstring>
 #define debug(x) cout << #x << '\t' << x << "\n";
 #define Test cout << "this is a test line\n";
@@ -13,7 +9,8 @@ using namespace std;
 
 string get_pwd();
 void init();
-bool create_file(string _pwd,string name);
+bool create_file(string _pwd, string name);
+bool create_folder(string _pwd, string name);
 
 string get_pwd()
 {
@@ -24,19 +21,36 @@ string get_pwd()
     return s;
 }
 
-bool create_file(string _pwd,string name){
-    cout<<"Create "<<name<<" at "<<_pwd<<"\n";
-    string _echo_="echo >>"+_pwd+"\\"+name;
+bool create_file(string _pwd, string name)
+{
+    cout << "Create " << name << " at " << _pwd << "\n";
+    string _echo_ = "echo >>" + _pwd + "\\" + name;
     char x[10000];
-    strcpy(x,_echo_.c_str());
-    bool _if_ok=system(x);
-    if(_if_ok==0){
-        cout<<"Successfully create "<<name<<" at "<<_pwd<<endl;
+    strcpy(x, _echo_.c_str());
+    bool _if_ok = system(x);
+    if (_if_ok == 0)
+    {
+        cout << "Successfully create " << name << " at " << _pwd << endl;
+        return true;
     }
-    else{
+    else
         return false;
-    }
+}
 
+bool create_folder(string _pwd, string name)
+{
+    cout << "Create " << name << " at " << _pwd << "\n";
+    string _make_folder = "md " + _pwd + "\\" + name;
+    char x[10000];
+    strcpy(x, _make_folder.c_str());
+    bool _if_ok = system(x);
+    if (_if_ok == 0)
+    {
+        cout << "Successfully create " << name << " at " << _pwd << endl;
+        return true;
+    }
+    else
+        return false;
 }
 
 void init()
@@ -47,63 +61,77 @@ void init()
      * index.html为主页
      * tag.html为标签索引页
      * 
-     * var：
      * _pwd 路径
      * status 判定system返回
      **/
-    int status;
+    bool status;
     string _pwd = get_pwd();
 
     cout << "Init at " << _pwd << endl;
-    create_file(_pwd,"index.html");
-    const char *_make_file = "md _file";
-    cout << "Create _file folder\n";
-    status = system(_make_file);
-    if (status != 0)
+    status = create_file(_pwd, "index.html");
+    if (!status)
     {
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
-    cout << "Successfully create _file folder\n";
-
-    const char *_make_file_html = "md _file_html";
-    
-    status = system(_make_file_html);
-    if (status != 0)
+    status = create_file(_pwd, "tag.html");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
+    status = create_folder(_pwd, "_file");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
+    status = create_folder(_pwd, "_file_html");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
+    status = create_file(_pwd, "configure.txt");
+    if (!status)
     {
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
 
-    // cout << "Create index.html\n";
-    // status = system("echo >>index.html");
-    // if (status != 0)
-    // {
-    //     cout << "Init Error\nPlease fix the problem and try again";
-    //     return;
-    // }
-    // cout << "Successfully create index.html\n";
-
-    // string create_file = "echo >>" + _pwd + "\\_file\\d.txt";
-    // char c[100];
-    // strcpy(c, create_file.c_str());
-    // status = system("echo >>index.html");
-    //  if(status!=0){
-    //     cout<<"Init Error\nPlease fix the problem and try again";
-    //     return;
-    // }
-    // status =system(c);
-    //  if(status!=0){
-    //     cout<<"Init Error\nPlease fix the problem and try again";
-    //     return ;
-    // }
     cout << "Initialization completed successfully";
     return;
 }
+
+void make_new_file(string name)
+{
+    try
+    {
+        FILE *_file = freopen("configure.txt", "r", stdin);
+        if (_file == NULL)
+        {
+            throw "Error.Not in the initialized directory.\n";
+        }
+        freopen("CON", "r", stdin);
+        string _pwd=get_pwd();
+        _pwd+="\\_file";
+        bool status=create_file(_pwd,name);
+        if(!status){
+            cout<<"Create "<<name<<" Error\n";
+        }
+    }
+    catch (const char * throw_string)
+    {
+        cout<<throw_string;
+        return;
+    }
+    // freopen("CON", "w", stdout);
+}
+
 int main(int argc, char *argv[])
 {
-    string s = argv[1];
     //init 无参数指令 初始化
+    string s = argv[1];
     if (s == "init")
     {
         try
@@ -114,10 +142,27 @@ int main(int argc, char *argv[])
         }
         catch (char const *throw_string)
         {
-            cout << throw_string << endl;
+            cout << throw_string;
             exit(0);
         }
     }
-    cout<<"test"<<endl;
+    else if (s == "new")
+    {
+        try
+        {
+            if (argc != 3)
+            {
+                throw "Create new file Error,please input the right instructions.\n";
+            }
+            string new_file_name = argv[2];
+            make_new_file(new_file_name);
+        }
+        catch (char const *throw_string)
+        {
+            cout << throw_string;
+            exit(0);
+        }
+    }
+
     return 0;
 }
