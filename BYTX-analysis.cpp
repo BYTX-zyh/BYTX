@@ -7,10 +7,6 @@
 #define ll long long
 #define Test cout << "this is a test line" << endl
 #define debug(x) cout << #x << '\t' << x << endl
-#define skip " "
-#define ct(x)                     \
-    for (int i = 0; i < (x); i++) \
-        cout << "\t";
 using namespace std;
 const int INF = 1e8;
 

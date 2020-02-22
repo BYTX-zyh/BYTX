@@ -15,6 +15,8 @@ void init();
 bool create_file(string _pwd, string name);
 bool create_folder(string _pwd, string name);
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
+void generate();
+void get_title();
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
 {
@@ -59,8 +61,22 @@ string get_pwd()
 bool create_file(string _pwd, string name)
 {
     cout << "Create " << name << " at " << _pwd << "\n";
+    string now_pwd = get_pwd();
+    string __name;
+    if (_pwd != now_pwd)
+        __name = _pwd + "\\" + name;
+    char _name[1000];
+    strcpy(_name, __name.c_str());
+    FILE *_file = freopen(_name, "r", stdin);
+    freopen("CON", "r", stdin);
+    if (_file != NULL)
+    {
+        cout << "Error\n"
+             << name << " is already exist at " << _pwd << endl;
+        return false;
+    }
     string _echo_ = "echo >>" + _pwd + "\\" + name;
-    char x[10000];
+    char x[1000];
     strcpy(x, _echo_.c_str());
     bool _if_ok = system(x);
     if (_if_ok == 0)
@@ -133,34 +149,52 @@ void init()
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
-
+    string _file_pwd = _pwd + "\\_file";
+    status = create_file(_file_pwd, "file.txt");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
     cout << "Initialization completed successfully";
     return;
 }
 
 void make_new_file(string name)
 {
-    try
+
+    FILE *_file = freopen("configure.txt", "r", stdin);
+    if (_file == NULL)
     {
-        FILE *_file = freopen("configure.txt", "r", stdin);
-        if (_file == NULL)
-        {
-            throw "Error.Not in the initialized directory.\n";
-        }
-        freopen("CON", "r", stdin);
-        string _pwd=get_pwd();
-        _pwd+="\\_file";
-        bool status=create_file(_pwd,name);
-        if(!status){
-            cout<<"Create "<<name<<" Error\n";
-        }
+        cout << "Error.Not in the initialized directory.\n";
+        return;
     }
-    catch (const char * throw_string)
+    freopen("CON", "r", stdin);
+    string _pwd = get_pwd();
+    _pwd += "\\_file";
+    bool status = create_file(_pwd, name);
+    if (!status)
     {
-        cout<<throw_string;
+        cout << "Create new file Error\n";
         return;
     }
     // freopen("CON", "w", stdout);
+}
+
+void generate()
+{
+}
+
+void get_title(string s)
+{
+    int cnt = 0;
+    for (int i = 0; i < 6; i++)
+        if (s[i] == '#')
+            cnt++;
+    cout << "\t<h" << cnt << ">";
+    for (int i = cnt; i < s.size(); i++)
+        cout << s[i];
+    cout << "</h" << cnt << ">\n";
 }
 
 int main(int argc, char *argv[])
@@ -198,6 +232,23 @@ int main(int argc, char *argv[])
             exit(0);
         }
     }
+    else if (s == "generate")
+    {
+        try
+        {
+            if (argc != 2)
+            {
+                throw "Error instruction\n";
+            }
+            generate();
+        }
+        catch (char const *throw_string)
+        {
+            cout << throw_string;
+            exit(0);
+        }
+    }
+    // system("pause");
 
     return 0;
 }
