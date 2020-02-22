@@ -2,7 +2,10 @@
 #include <direct.h>
 #include <string>
 #include <io.h>
+#include <windows.h>
+#include <stdio.h>
 #include <cstring>
+#include <fstream>
 #define debug(x) cout << #x << '\t' << x << "\n";
 #define Test cout << "this is a test line\n";
 using namespace std;
@@ -11,6 +14,38 @@ string get_pwd();
 void init();
 bool create_file(string _pwd, string name);
 bool create_folder(string _pwd, string name);
+bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
+
+bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
+{
+    FILETIME ftCreate, ftAccess, ftWrite;
+    SYSTEMTIME stUTC1, stLocal1, stUTC2, stLocal2, stUTC3, stLocal3;
+    // -------->获取 FileTime
+    if (!GetFileTime(hFile, &ftCreate, &ftAccess, &ftWrite))
+    {
+        return false;
+    }
+    //---------> 转换: FileTime --> LocalTime
+    FileTimeToSystemTime(&ftCreate, &stUTC1);
+    FileTimeToSystemTime(&ftAccess, &stUTC2);
+    FileTimeToSystemTime(&ftWrite, &stUTC3);
+
+    SystemTimeToTzSpecificLocalTime(NULL, &stUTC1, &stLocal1);
+    SystemTimeToTzSpecificLocalTime(NULL, &stUTC2, &stLocal2);
+    SystemTimeToTzSpecificLocalTime(NULL, &stUTC3, &stLocal3);
+
+    // ---------> Show the  date and time.
+    // wsprintf(lpszCreationTime, "C:\t%02d/%02d/%d  %02d:%02d",
+    //          stLocal1.wDay, stLocal1.wMonth, stLocal1.wYear,
+    //          stLocal1.wHour, stLocal1.wMinute);
+    // wsprintf(lpszLastAccessTime, "last visit:\t%02d/%02d/%d  %02d:%02d",
+    //          stLocal2.wDay, stLocal2.wMonth, stLocal2.wYear,
+    //          stLocal2.wHour, stLocal2.wMinute);
+    wsprintf(lpszLastWriteTime, "last change time:\t%02d/%02d/%d  %02d:%02d\n",
+             stLocal3.wDay, stLocal3.wMonth, stLocal3.wYear,
+             stLocal3.wHour, stLocal3.wMinute);
+    return true;
+}
 
 string get_pwd()
 {
