@@ -60,27 +60,25 @@ string get_pwd()
 
 bool create_file(string _pwd, string name)
 {
-    if(name[name.size()-1]!='d'||name[name.size()-2]!='m'||name[name.size()-3]!='.'){
-        cout<<"Error.Please create a new markdown file\n";
-        return false;
-    }
-    cout << "Create " << name << " at " << _pwd << "\n";
+    cout << "Create " << name << " at " << _pwd ;
     string now_pwd = get_pwd();
     if (_pwd != now_pwd)
-        name=_pwd+"//"+name;
+        name = _pwd + "//" + name;
     FILE *file;
     char fileName[1000];
-    strcpy(fileName,name.c_str());
+    strcpy(fileName, name.c_str());
     //使用“读入”方式打开文件
     file = fopen(fileName, "r");
-    //如果文件不存在
     if (file == NULL)
-    {
         // 使用“写入”方式创建文件
         file = fopen(fileName, "w");
-    }
     //关闭文件
+    file = fopen(fileName, "r");
     fclose(file);
+    if (file != NULL)
+        return true;
+    else 
+        return false;
 }
 
 bool create_folder(string _pwd, string name)
@@ -144,7 +142,7 @@ void init()
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
-    status = create_file( "_file", "file.txt");
+    status = create_file("_file", "file.txt");
     if (!status)
     {
         cout << "Init Error\nPlease fix the problem and try again";
@@ -164,14 +162,16 @@ void make_new_file(string name)
         return;
     }
     freopen("CON", "r", stdin);
-    bool status = create_file( "_file", name);
+    if(name[name.size()-1]!='d'||name[name.size()-2]!='m'||name[name.size()-3]!='.'){
+        cout<<"Error.Please create a markdown file\n";
+        return;
+    }
+    bool status = create_file("_file", name);
     if (!status)
     {
         cout << "Create new file Error\n";
         return;
     }
-
-
 }
 
 void generate()
