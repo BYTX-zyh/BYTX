@@ -17,6 +17,7 @@ bool create_folder(string _pwd, string name);
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
 void generate();
 void get_title();
+void watch();
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
 {
@@ -35,7 +36,6 @@ bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime,
     SystemTimeToTzSpecificLocalTime(NULL, &stUTC1, &stLocal1);
     SystemTimeToTzSpecificLocalTime(NULL, &stUTC2, &stLocal2);
     SystemTimeToTzSpecificLocalTime(NULL, &stUTC3, &stLocal3);
-
     // ---------> Show the  date and time.
     // wsprintf(lpszCreationTime, "C:\t%02d/%02d/%d  %02d:%02d",
     //          stLocal1.wDay, stLocal1.wMonth, stLocal1.wYear,
@@ -79,13 +79,10 @@ bool create_file(string _pwd, string name)
     char x[1000];
     strcpy(x, _echo_.c_str());
     bool _if_ok = system(x);
-    if (_if_ok == 0)
-    {
-        cout << "Successfully create " << name << " at " << _pwd << endl;
-        return true;
-    }
-    else
+    if (_if_ok != 0)
         return false;
+    cout << "Successfully create " << name << " at " << _pwd << endl;
+    return true;
 }
 
 bool create_folder(string _pwd, string name)
@@ -178,11 +175,46 @@ void make_new_file(string name)
         cout << "Create new file Error\n";
         return;
     }
-    // freopen("CON", "w", stdout);
+    _pwd += "\\file.txt";
+    char _pwd_[1000];
+    strcpy(_pwd_, _pwd.c_str());
+    _file = freopen(_pwd_, "w", stdout);
+    freopen("CON", "w", stdout);
+    if (_file == NULL)
+    {
+        cout << "Error.file.txt does not exist.\n";
+        return;
+    }
+
+    FILE *qwer;
+    int temp = 123213123;
+    qwer = fopen(_pwd_, "w");
+    fprintf(qwer, "%d", temp);
 }
 
 void generate()
 {
+}
+
+void watch()
+{
+    FILE *_file = freopen("configure.txt", "r", stdin);
+    freopen("CON", "r", stdin);
+    if (_file == NULL)
+    {
+        cout << "Error.Not in the initialized directory.\n";
+        return;
+    }
+    string _pwd = get_pwd();
+    _pwd += "\\_file\\file.txt";
+    char _pwd_[1000];
+    strcpy(_pwd_, _pwd.c_str());
+    _file = freopen(_pwd_, "r", stdin);
+    if (_file == NULL)
+    {
+        cout << "Error.file.txt does not exist.\n";
+        return;
+    }
 }
 
 void get_title(string s)
@@ -203,50 +235,38 @@ int main(int argc, char *argv[])
     string s = argv[1];
     if (s == "init")
     {
-        try
+
+        if (argc != 2)
         {
-            if (argc != 2)
-                throw "Init Error,please input the right instructions.\nMaybe you want \"init\"?\n";
-            init();
+            throw "Init Error,please input the right instructions.\nMaybe you want \"init\"?\n";
+            return 0;
         }
-        catch (char const *throw_string)
-        {
-            cout << throw_string;
-            exit(0);
-        }
+        init();
     }
     else if (s == "new")
     {
-        try
+
+        if (argc != 3)
         {
-            if (argc != 3)
-            {
-                throw "Create new file Error,please input the right instructions.\n";
-            }
-            string new_file_name = argv[2];
-            make_new_file(new_file_name);
+            cout << "Create new file Error,please input the right instructions.\n";
+            return 0;
         }
-        catch (char const *throw_string)
-        {
-            cout << throw_string;
-            exit(0);
-        }
+        string new_file_name = argv[2];
+        make_new_file(new_file_name);
     }
     else if (s == "generate")
     {
-        try
+
+        if (argc != 2)
         {
-            if (argc != 2)
-            {
-                throw "Error instruction\n";
-            }
-            generate();
+            cout << "Error instruction\n";
+            return 0;
         }
-        catch (char const *throw_string)
-        {
-            cout << throw_string;
-            exit(0);
-        }
+        generate();
+    }
+    else if (s == "watch")
+    {
+        watch();
     }
     // system("pause");
 
