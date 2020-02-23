@@ -60,29 +60,27 @@ string get_pwd()
 
 bool create_file(string _pwd, string name)
 {
-    cout << "Create " << name << " at " << _pwd << "\n";
-    string now_pwd = get_pwd();
-    string __name;
-    if (_pwd != now_pwd)
-        __name = _pwd + "\\" + name;
-    char _name[1000];
-    strcpy(_name, __name.c_str());
-    FILE *_file = freopen(_name, "r", stdin);
-    freopen("CON", "r", stdin);
-    if (_file != NULL)
-    {
-        cout << "Error\n"
-             << name << " is already exist at " << _pwd << endl;
+    if(name[name.size()-1]!='d'||name[name.size()-2]!='m'||name[name.size()-3]!='.'){
+        cout<<"Error.Please create a new markdown file\n";
         return false;
     }
-    string _echo_ = "echo >>" + _pwd + "\\" + name;
-    char x[1000];
-    strcpy(x, _echo_.c_str());
-    bool _if_ok = system(x);
-    if (_if_ok != 0)
-        return false;
-    cout << "Successfully create " << name << " at " << _pwd << endl;
-    return true;
+    cout << "Create " << name << " at " << _pwd << "\n";
+    string now_pwd = get_pwd();
+    if (_pwd != now_pwd)
+        name=_pwd+"//"+name;
+    FILE *file;
+    char fileName[1000];
+    strcpy(fileName,name.c_str());
+    //使用“读入”方式打开文件
+    file = fopen(fileName, "r");
+    //如果文件不存在
+    if (file == NULL)
+    {
+        // 使用“写入”方式创建文件
+        file = fopen(fileName, "w");
+    }
+    //关闭文件
+    fclose(file);
 }
 
 bool create_folder(string _pwd, string name)
@@ -146,8 +144,7 @@ void init()
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
-    string _file_pwd = _pwd + "\\_file";
-    status = create_file(_file_pwd, "file.txt");
+    status = create_file( "_file", "file.txt");
     if (!status)
     {
         cout << "Init Error\nPlease fix the problem and try again";
@@ -167,29 +164,14 @@ void make_new_file(string name)
         return;
     }
     freopen("CON", "r", stdin);
-    string _pwd = get_pwd();
-    _pwd += "\\_file";
-    bool status = create_file(_pwd, name);
+    bool status = create_file( "_file", name);
     if (!status)
     {
         cout << "Create new file Error\n";
         return;
     }
-    _pwd += "\\file.txt";
-    char _pwd_[1000];
-    strcpy(_pwd_, _pwd.c_str());
-    _file = freopen(_pwd_, "w", stdout);
-    freopen("CON", "w", stdout);
-    if (_file == NULL)
-    {
-        cout << "Error.file.txt does not exist.\n";
-        return;
-    }
 
-    FILE *qwer;
-    int temp = 123213123;
-    qwer = fopen(_pwd_, "w");
-    fprintf(qwer, "%d", temp);
+
 }
 
 void generate()
