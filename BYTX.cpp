@@ -16,7 +16,7 @@ bool create_file(string _pwd, string name);
 bool create_folder(string _pwd, string name);
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
 void generate();
-void get_title();
+void get_title(string s);
 void watch();
 void turn(string file_name);
 
@@ -224,22 +224,39 @@ void turn(string file_name)
      *保证此时文件存在且需要渲染
      * 
      **/
+    string file_file_name = "_file\\" + file_name;
+    string html_file_name = "_file_html\\" + file_name;
+    char _file_file_name[100], _html_file_name[100];
 
-    string file_file_name="_file\\"+file_name;
-    string html_file_name="_file_html\\"+file_name;
-    char _file_file_name[100],_html_file_name[100];
-
-    strcpy(_file_file_name,file_file_name.c_str());
-    html_file_name=html_file_name.substr(0,html_file_name.size()-3)+".html";
-    strcpy(_html_file_name,html_file_name.c_str());
-    cout<<_html_file_name<<endl;
+    strcpy(_file_file_name, file_file_name.c_str());
+    html_file_name = html_file_name.substr(0, html_file_name.size() - 3) + ".html";
+    strcpy(_html_file_name, html_file_name.c_str());
+    cout << "The html file is " << _html_file_name << endl;
 
     freopen(_file_file_name, "r", stdin);
     freopen(_html_file_name, "w", stdout);
+    char get_one_line[1000];
+    while (gets(get_one_line))
+    {
+        string s = get_one_line;
+        if (s.size() >= 2 && s.substr(0, 2) == "# " ||
+            s.size() >= 3 && s.substr(0, 3) == "## " ||
+            s.size() >= 4 && s.substr(0, 4) == "### " ||
+            s.size() >= 5 && s.substr(0, 5) == "#### " ||
+            s.size() >= 6 && s.substr(0, 6) == "##### " ||
+            s.size() >= 7 && s.substr(0, 7) == "###### ")
+        {
+            get_title(s);
+        }
+        // cout << s << endl;
+    }
+    freopen("CON", "r", stdin);
+    freopen("CON", "w", stdout);
 }
 
 void get_title(string s)
 {
+    //应当考虑空格是否存在
     int cnt = 0;
     for (int i = 0; i < 6; i++)
         if (s[i] == '#')
@@ -289,7 +306,8 @@ int main(int argc, char *argv[])
     {
         watch();
     }
-    else if(s=="turn"){
+    else if (s == "turn")
+    {
         turn("3.md");
     }
     // system("pause");
