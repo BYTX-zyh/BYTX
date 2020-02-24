@@ -18,6 +18,7 @@ bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime,
 void generate();
 void get_title();
 void watch();
+void turn(string file_name);
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
 {
@@ -60,7 +61,7 @@ string get_pwd()
 
 bool create_file(string _pwd, string name)
 {
-    cout << "Create " << name << " at " << _pwd ;
+    cout << "Create " << name << " at " << _pwd << "\n";
     string now_pwd = get_pwd();
     if (_pwd != now_pwd)
         name = _pwd + "//" + name;
@@ -77,7 +78,7 @@ bool create_file(string _pwd, string name)
     fclose(file);
     if (file != NULL)
         return true;
-    else 
+    else
         return false;
 }
 
@@ -162,8 +163,9 @@ void make_new_file(string name)
         return;
     }
     freopen("CON", "r", stdin);
-    if(name[name.size()-1]!='d'||name[name.size()-2]!='m'||name[name.size()-3]!='.'){
-        cout<<"Error.Please create a markdown file\n";
+    if (name[name.size() - 1] != 'd' || name[name.size() - 2] != 'm' || name[name.size() - 3] != '.')
+    {
+        cout << "Error.Please create a markdown file\n";
         return;
     }
     bool status = create_file("_file", name);
@@ -172,6 +174,18 @@ void make_new_file(string name)
         cout << "Create new file Error\n";
         return;
     }
+    _file = freopen("_file\\file.txt", "r", stdin);
+    freopen("CON", "r", stdin);
+    if (_file == NULL)
+    {
+        cout << "Error._file\\file.txt does not exist.\n";
+        return;
+    }
+    ofstream fout("_file\\file.txt", ios::app);
+    fout << name << '\n';
+    fout.close();
+    cout << "add new file name in file.txt" << endl;
+    return;
 }
 
 void generate()
@@ -187,16 +201,41 @@ void watch()
         cout << "Error.Not in the initialized directory.\n";
         return;
     }
-    string _pwd = get_pwd();
-    _pwd += "\\_file\\file.txt";
-    char _pwd_[1000];
-    strcpy(_pwd_, _pwd.c_str());
-    _file = freopen(_pwd_, "r", stdin);
-    if (_file == NULL)
-    {
-        cout << "Error.file.txt does not exist.\n";
-        return;
-    }
+    // _file = freopen("_file\\file.txt", "r", stdin);
+    // if (_file == NULL)
+    // {
+    //     cout << "Error.file.txt does not exist.\n";
+    //     return;
+    // }
+    // else {
+    //     char xxxx[10000];
+    //     while(gets(xxxx)){
+    //          cout<<xxxx<<endl;
+    //     }
+
+    // }
+    // freopen("CON", "r", stdin);
+}
+
+void turn(string file_name)
+{
+    /**
+     *file_name:xxx.md 
+     *保证此时文件存在且需要渲染
+     * 
+     **/
+
+    string file_file_name="_file\\"+file_name;
+    string html_file_name="_file_html\\"+file_name;
+    char _file_file_name[100],_html_file_name[100];
+
+    strcpy(_file_file_name,file_file_name.c_str());
+    html_file_name=html_file_name.substr(0,html_file_name.size()-3)+".html";
+    strcpy(_html_file_name,html_file_name.c_str());
+    cout<<_html_file_name<<endl;
+
+    freopen(_file_file_name, "r", stdin);
+    freopen(_html_file_name, "w", stdout);
 }
 
 void get_title(string s)
@@ -250,7 +289,9 @@ int main(int argc, char *argv[])
     {
         watch();
     }
+    else if(s=="turn"){
+        turn("3.md");
+    }
     // system("pause");
-
     return 0;
 }
