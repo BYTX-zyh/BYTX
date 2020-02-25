@@ -6,19 +6,43 @@
 #include <stdio.h>
 #include <cstring>
 #include <fstream>
+#include <vector>
 #define debug(x) cout << #x << '\t' << x << "\n";
 #define Test cout << "this is a test line\n";
 using namespace std;
 
+/**
+ * task means that the last line is a task
+ * normal means that not need such as </ul>
+ * */
+string status = "normal";
+
+//get the pwd
 string get_pwd();
+//init at the file
 void init();
+//create file and check if at the file inited
 bool create_file(string _pwd, string name);
+//create folder and check if at the file inited
 bool create_folder(string _pwd, string name);
+//get the time about the file
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
+
 void generate();
-void get_title(string s);
+//check which need turn
 void watch();
+//turn markdown to HTML
 void turn(string file_name);
+//check if title
+bool check_if_title(string s);
+//get a title
+void get_title(string s);
+//check if task and return the first position of the task
+bool check_if_task(string s, int &pos);
+//get a task and turn to HTML
+void get_task(string s, int pos);
+//change status and print some code such as <\ul>
+void change_status(string next_status);
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
 {
@@ -236,27 +260,64 @@ void turn(string file_name)
     freopen(_file_file_name, "r", stdin);
     freopen(_html_file_name, "w", stdout);
     char get_one_line[1000];
+
+    cout << "<!doctype html>\n";
+    cout << "<html>\n";
     while (gets(get_one_line))
     {
+        int pos = 0;
         string s = get_one_line;
-        if (s.size() >= 2 && s.substr(0, 2) == "# " ||
-            s.size() >= 3 && s.substr(0, 3) == "## " ||
-            s.size() >= 4 && s.substr(0, 4) == "### " ||
-            s.size() >= 5 && s.substr(0, 5) == "#### " ||
-            s.size() >= 6 && s.substr(0, 6) == "##### " ||
-            s.size() >= 7 && s.substr(0, 7) == "###### ")
+        if (check_if_title(s))
         {
+            change_status("normal");
             get_title(s);
+        }
+        else if (check_if_task(s, pos))
+        {
+            change_status("task");
+            get_task(s, pos);
         }
         // cout << s << endl;
     }
+
+    cout << "</html>\n";
+
     freopen("CON", "r", stdin);
     freopen("CON", "w", stdout);
 }
 
+void change_status(string next_status)
+{
+    if (status == next_status)
+        return;
+    else if (status == "task" && next_status == "normal")
+    {
+        cout << "<\\ul>\n";
+    }
+    else if (status == "normal" && next_status == "task")
+    {
+        cout << "<ul>\n";
+    }
+
+    status = next_status;
+    return;
+}
+
+bool check_if_title(string s)
+{
+    if (s.size() >= 2 && s.substr(0, 2) == "# " ||
+        s.size() >= 3 && s.substr(0, 3) == "## " ||
+        s.size() >= 4 && s.substr(0, 4) == "### " ||
+        s.size() >= 5 && s.substr(0, 5) == "#### " ||
+        s.size() >= 6 && s.substr(0, 6) == "##### " ||
+        s.size() >= 7 && s.substr(0, 7) == "###### ")
+        return true;
+    else
+        return false;
+}
+
 void get_title(string s)
 {
-    //应当考虑空格是否存在
     int cnt = 0;
     for (int i = 0; i < 6; i++)
         if (s[i] == '#')
@@ -265,6 +326,48 @@ void get_title(string s)
     for (int i = cnt; i < s.size(); i++)
         cout << s[i];
     cout << "</h" << cnt << ">\n";
+}
+
+bool check_if_task(string s, int &pos)
+{
+    int pos1, pos2, pos3;
+    pos1 = s.find('-');
+    pos2 = s.find('[');
+    pos3 = s.find(']');
+    if (pos1 == s.npos || pos2 == s.npos || pos3 == s.npos)
+        return false;
+    if (s[pos1 + 1] != ' ')
+        return false;
+    if (pos2 + 2 != pos3)
+        return false;
+    if (s[pos2 + 1] != ' ' && s[pos2 + 1] != 'x')
+        return false;
+    if (s.size() - 1 >= pos3 + 1 && s[pos3 + 1] != ' ')
+        return false;
+    for (int i = 0; i < pos1; i++)
+        if (s[i] != ' ')
+            return false;
+    pos = pos3 + 1;
+    for (int i = pos3 + 1; i < s.size(); i++)
+    {
+        if (s[i] != ' ')
+        {
+            pos = i;
+            return true;
+        }
+    }
+    return true;
+}
+
+void get_task(string s, int pos)
+{
+    cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
+    for (int i = pos; i < s.size(); i++)
+    {
+        cout << s[i];
+    }
+    cout << endl;
+    cout<<"</li>\n";
 }
 
 int main(int argc, char *argv[])
