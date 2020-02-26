@@ -44,9 +44,9 @@ bool check_if_title(string s);
 void get_title(string s);
 
 //check if task and return the first position of the task
-bool check_if_task(string s, int &pos);
-//get a task and turn to HTML
-void get_task(string s, int pos);
+bool check_if_task(string s, int &pos, bool & if_check);
+//get a task and turn to HTML if_check mean if cheak
+void get_task(string s, int pos, bool if_check);
 
 //check if need print a <hr />
 bool check_hr(string s);
@@ -168,14 +168,14 @@ void init()
      * _pwd 路径
      * status 判定system返回
      **/
-    
-    
+
     bool status;
     string _pwd = get_pwd();
 
-    status=check_folder_if_exist(_pwd);
-    if(status){
-        cout<<"Error.This folder is not empty.\n";
+    status = check_folder_if_exist(_pwd);
+    if (status)
+    {
+        cout << "Error.This folder is not empty.\n";
         return;
     }
     cout << "Start init at " << _pwd << endl;
@@ -225,29 +225,29 @@ void init()
 bool check_folder_if_exist(string folder_name)
 {
     char _folder_name[1000];
-    strcpy(_folder_name,folder_name.c_str());
+    strcpy(_folder_name, folder_name.c_str());
     DIR *dir = opendir(_folder_name);
     struct dirent *ent;
     if (dir == NULL)
     {
         return true;
-    }  
+    }
     while (true)
-    {  
-        ent = readdir (dir);
+    {
+        ent = readdir(dir);
         if (ent <= 0)
         {
             break;
-        }  
-        if ((strcmp(".", ent->d_name)==0) || (strcmp("..", ent->d_name)==0))
-        {  
+        }
+        if ((strcmp(".", ent->d_name) == 0) || (strcmp("..", ent->d_name) == 0))
+        {
             continue;
-        }  
+        }
         /*判断是否有目录和文件*/
         if ((ent->d_type == DT_DIR) || (ent->d_type == DT_REG))
-        {  
+        {
             return true;
-        }  
+        }
     }
     return false;
 }
@@ -342,15 +342,16 @@ void turn(string file_name)
     {
         int pos = 0;
         string s = get_one_line;
+        bool task_if_check;
         if (check_if_title(s))
         {
             change_status("normal");
             get_title(s);
         }
-        else if (check_if_task(s, pos))
+        else if (check_if_task(s, pos,task_if_check))
         {
             change_status("task");
-            get_task(s, pos);
+            get_task(s, pos,task_if_check);
         }
         else if (check_hr(s))
         {
@@ -372,7 +373,7 @@ void change_status(string next_status)
         return;
     else if (status == "task" && next_status == "normal")
     {
-        cout << "<\\ul>\n";
+        cout << "</ul>\n";
     }
     else if (status == "normal" && next_status == "task")
     {
@@ -407,7 +408,7 @@ void get_title(string s)
     cout << "</h" << cnt << ">\n";
 }
 
-bool check_if_task(string s, int &pos)
+bool check_if_task(string s, int &pos, bool & if_check)
 {
     int pos1, pos2, pos3;
     pos1 = s.find('-');
@@ -427,6 +428,10 @@ bool check_if_task(string s, int &pos)
         if (s[i] != ' ')
             return false;
     pos = pos3 + 1;
+    if (s[pos2 + 1] == ' ')
+        if_check = false;
+    else
+        if_check = true;
     for (int i = pos3 + 1; i < s.size(); i++)
     {
         if (s[i] != ' ')
@@ -438,8 +443,11 @@ bool check_if_task(string s, int &pos)
     return true;
 }
 
-void get_task(string s, int pos)
+void get_task(string s, int pos,bool if_check)
 {
+    if(if_check)
+    cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\'checked/>";
+    else 
     cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
     for (int i = pos; i < s.size(); i++)
     {
