@@ -183,19 +183,23 @@ void read_file()
 int main()
 {
 
-    freopen("test.md", "r", stdin);
-    freopen("test.html", "w", stdout);
-    cout << "<!DOCTYPE html>\n";
-    cout << "<html>\n";
-    add_head();
+    freopen("_file\\3.md", "r", stdin);
+    // freopen("test.html", "w", stdout);
+    char s[1000];
+    while(gets(s)){
+        if(s[0]=='\t')cout<<"fdfdfdf"<<endl;
+    }
+    // cout << "<!DOCTYPE html>\n";
+    // cout << "<html>\n";
+    // add_head();
 
-    cout << "<body marginheight=\"0px\" marginwidth=\"0px\">\n";
-    add_navigation_bar();
-    cout << "\t<div style=\"margin-right:10%;margin-left:10%;\">";
-    read_file();
-    cout << "\t</div>\n";
-    add_footer();
-    cout << "</body>\n";
-    // system("pause");
+    // cout << "<body marginheight=\"0px\" marginwidth=\"0px\">\n";
+    // add_navigation_bar();
+    // cout << "\t<div style=\"margin-right:10%;margin-left:10%;\">";
+    // read_file();
+    // cout << "\t</div>\n";
+    // add_footer();
+    // cout << "</body>\n";
+    system("pause");
     return 0;
 }

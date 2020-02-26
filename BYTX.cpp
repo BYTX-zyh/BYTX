@@ -1,5 +1,6 @@
 #include <iostream>
 #include <direct.h>
+#include <dirent.h>
 #include <string>
 #include <io.h>
 #include <windows.h>
@@ -19,28 +20,39 @@ string status = "normal";
 
 //get the pwd
 string get_pwd();
+
 //init at the file
 void init();
+//
+void generate();
+//check which need turn
+void watch();
+//turn markdown to HTML
+void turn(string file_name);
 //create file and check if at the file inited
 bool create_file(string _pwd, string name);
 //create folder and check if at the file inited
 bool create_folder(string _pwd, string name);
 //get the time about the file
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
+//check a foleder if exist
+bool check_folder_if_exist(string folder_name);
 
-void generate();
-//check which need turn
-void watch();
-//turn markdown to HTML
-void turn(string file_name);
 //check if title
 bool check_if_title(string s);
 //get a title
 void get_title(string s);
+
 //check if task and return the first position of the task
 bool check_if_task(string s, int &pos);
 //get a task and turn to HTML
 void get_task(string s, int pos);
+
+//check if need print a <hr />
+bool check_hr(string s);
+//need a <hr/>
+void get_hr(string s);
+
 //change status and print some code such as <\ul>
 void change_status(string next_status);
 
@@ -94,12 +106,35 @@ bool create_file(string _pwd, string name)
     strcpy(fileName, name.c_str());
     //使用“读入”方式打开文件
     file = fopen(fileName, "r");
+    if (file != NULL)
+    {
+        cout << "Error.this file already exist.\n";
+        cout << "Would you want remake this file?\n";
+        cout << "Please input your chose:[y/n]:";
+        char chose;
+        while (cin >> chose)
+        {
+            if (chose == 'y' || chose == 'Y')
+            {
+                break;
+            }
+            else if (chose == 'n' || chose == 'N')
+            {
+                return false;
+            }
+            else
+            {
+                cout << "Error.Please input your chose:[y/n]:";
+            }
+        }
+    }
     if (file == NULL)
         // 使用“写入”方式创建文件
         file = fopen(fileName, "w");
     //关闭文件
-    file = fopen(fileName, "r");
+    // file = fopen(fileName, "r");
     fclose(file);
+
     if (file != NULL)
         return true;
     else
@@ -133,22 +168,18 @@ void init()
      * _pwd 路径
      * status 判定system返回
      **/
+    
+    
     bool status;
     string _pwd = get_pwd();
 
-    cout << "Init at " << _pwd << endl;
-    status = create_file(_pwd, "index.html");
-    if (!status)
-    {
-        cout << "Init Error\nPlease fix the problem and try again";
+    status=check_folder_if_exist(_pwd);
+    if(status){
+        cout<<"Error.This folder is not empty.\n";
         return;
     }
-    status = create_file(_pwd, "tag.html");
-    if (!status)
-    {
-        cout << "Init Error\nPlease fix the problem and try again";
-        return;
-    }
+    cout << "Start init at " << _pwd << endl;
+
     status = create_folder(_pwd, "_file");
     if (!status)
     {
@@ -161,6 +192,20 @@ void init()
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
+
+    status = create_file(_pwd, "index.html");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
+    status = create_file(_pwd, "tag.html");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
+
     status = create_file(_pwd, "configure.txt");
     if (!status)
     {
@@ -175,6 +220,36 @@ void init()
     }
     cout << "Initialization completed successfully";
     return;
+}
+
+bool check_folder_if_exist(string folder_name)
+{
+    char _folder_name[1000];
+    strcpy(_folder_name,folder_name.c_str());
+    DIR *dir = opendir(_folder_name);
+    struct dirent *ent;
+    if (dir == NULL)
+    {
+        return true;
+    }  
+    while (true)
+    {  
+        ent = readdir (dir);
+        if (ent <= 0)
+        {
+            break;
+        }  
+        if ((strcmp(".", ent->d_name)==0) || (strcmp("..", ent->d_name)==0))
+        {  
+            continue;
+        }  
+        /*判断是否有目录和文件*/
+        if ((ent->d_type == DT_DIR) || (ent->d_type == DT_REG))
+        {  
+            return true;
+        }  
+    }
+    return false;
 }
 
 void make_new_file(string name)
@@ -277,6 +352,11 @@ void turn(string file_name)
             change_status("task");
             get_task(s, pos);
         }
+        else if (check_hr(s))
+        {
+            change_status("normal");
+            cout << s << endl;
+        }
         // cout << s << endl;
     }
 
@@ -298,7 +378,6 @@ void change_status(string next_status)
     {
         cout << "<ul>\n";
     }
-
     status = next_status;
     return;
 }
@@ -367,7 +446,40 @@ void get_task(string s, int pos)
         cout << s[i];
     }
     cout << endl;
-    cout<<"</li>\n";
+    cout << "</li>\n";
+}
+
+bool check_hr(string s)
+{
+    //cnt_skip to count skip and cnt_ to count - or *
+    int cnt_skip = 0, cnt_1 = 0, cnt_2 = 0;
+    int s_size = s.size();
+    for (int i = 0; i < s_size; i++)
+    {
+        if (s[i] == ' ')
+            cnt_skip++;
+        else if (s[i] == '-')
+        {
+            cnt_1++;
+        }
+        else if (s[i] == '*')
+        {
+            cnt_2++;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    if (cnt_1 + cnt_skip == s_size || cnt_2 + cnt_skip == s_size)
+        return true;
+    else
+        return false;
+}
+
+void get_hr(string s)
+{
+    cout << "<hr //>\n";
 }
 
 int main(int argc, char *argv[])
