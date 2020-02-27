@@ -44,7 +44,7 @@ bool check_if_title(string s);
 void get_title(string s);
 
 //check if task and return the first position of the task
-bool check_if_task(string s, int &pos, bool & if_check);
+bool check_if_task(string s, int &pos, bool &if_check);
 //get a task and turn to HTML if_check mean if cheak
 void get_task(string s, int pos, bool if_check);
 
@@ -52,6 +52,9 @@ void get_task(string s, int pos, bool if_check);
 bool check_hr(string s);
 //need a <hr/>
 void get_hr(string s);
+
+//check if reserved word
+void turn_word(char x);
 
 //change status and print some code such as <\ul>
 void change_status(string next_status);
@@ -348,15 +351,15 @@ void turn(string file_name)
             change_status("normal");
             get_title(s);
         }
-        else if (check_if_task(s, pos,task_if_check))
+        else if (check_if_task(s, pos, task_if_check))
         {
             change_status("task");
-            get_task(s, pos,task_if_check);
+            get_task(s, pos, task_if_check);
         }
         else if (check_hr(s))
         {
             change_status("normal");
-            cout << s << endl;
+            get_hr(s);
         }
         // cout << s << endl;
     }
@@ -404,11 +407,11 @@ void get_title(string s)
             cnt++;
     cout << "\t<h" << cnt << ">";
     for (int i = cnt; i < s.size(); i++)
-        cout << s[i];
+        turn_word(s[i]);
     cout << "</h" << cnt << ">\n";
 }
 
-bool check_if_task(string s, int &pos, bool & if_check)
+bool check_if_task(string s, int &pos, bool &if_check)
 {
     int pos1, pos2, pos3;
     pos1 = s.find('-');
@@ -443,15 +446,15 @@ bool check_if_task(string s, int &pos, bool & if_check)
     return true;
 }
 
-void get_task(string s, int pos,bool if_check)
+void get_task(string s, int pos, bool if_check)
 {
-    if(if_check)
-    cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\'checked/>";
-    else 
-    cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
+    if (if_check)
+        cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\'checked/>";
+    else
+        cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
     for (int i = pos; i < s.size(); i++)
     {
-        cout << s[i];
+        turn_word(s[i]);
     }
     cout << endl;
     cout << "</li>\n";
@@ -467,17 +470,11 @@ bool check_hr(string s)
         if (s[i] == ' ')
             cnt_skip++;
         else if (s[i] == '-')
-        {
             cnt_1++;
-        }
         else if (s[i] == '*')
-        {
             cnt_2++;
-        }
         else
-        {
             return false;
-        }
     }
     if (cnt_1 + cnt_skip == s_size || cnt_2 + cnt_skip == s_size)
         return true;
@@ -488,6 +485,24 @@ bool check_hr(string s)
 void get_hr(string s)
 {
     cout << "<hr //>\n";
+}
+
+void turn_word(char x)
+{
+    if (x == ' ')
+        cout << "&#160;";
+    else if (x == '<')
+        cout << "&#60;";
+    else if (x == '>')
+        cout << "&#62;";
+    else if (x == '&')
+        cout << "&#38;";
+    else if (x == '\"')
+        cout << "&#34;";
+    else if (x == '\'')
+        cout << "&#39;";
+    else
+        cout << x;
 }
 
 int main(int argc, char *argv[])
