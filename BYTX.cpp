@@ -8,6 +8,8 @@
 #include <cstring>
 #include <fstream>
 #include <vector>
+#include <map>
+#pragma comment(lib, "urlmon.lib")
 #define debug(x) cout << #x << '\t' << x << "\n";
 #define Test cout << "this is a test line\n";
 using namespace std;
@@ -53,8 +55,13 @@ bool check_hr(string s);
 //need a <hr/>
 void get_hr(string s);
 
-//check if reserved word
-void turn_word(char x);
+//check if reserved word and some other like ==mark==
+void turn_word(string s, int &pos);
+
+//check if need <Mark> for now_pos to next_pos now_pos:==code==:next_pos
+bool check_if_need_mark(string s, int now_pos, int &next_pos);
+//get a pos need mark for pos to end_pos pos:==code==:end_pos
+void get_mark(string s, int pos, int end_pos);
 
 //change status and print some code such as <\ul>
 void change_status(string next_status);
@@ -406,8 +413,8 @@ void get_title(string s)
         if (s[i] == '#')
             cnt++;
     cout << "\t<h" << cnt << ">";
-    for (int i = cnt; i < s.size(); i++)
-        turn_word(s[i]);
+    for (int i = cnt; i < s.size();)
+        turn_word(s, i);
     cout << "</h" << cnt << ">\n";
 }
 
@@ -454,7 +461,7 @@ void get_task(string s, int pos, bool if_check)
         cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
     for (int i = pos; i < s.size(); i++)
     {
-        turn_word(s[i]);
+        turn_word(s, i);
     }
     cout << endl;
     cout << "</li>\n";
@@ -484,30 +491,68 @@ bool check_hr(string s)
 
 void get_hr(string s)
 {
-    cout << "<hr //>\n";
+    cout << "<hr />\n";
 }
 
-void turn_word(char x)
+void turn_word(string s, int &pos)
 {
-    if (x == ' ')
-        cout << "&#160;";
-    else if (x == '<')
-        cout << "&#60;";
-    else if (x == '>')
-        cout << "&#62;";
-    else if (x == '&')
-        cout << "&#38;";
-    else if (x == '\"')
-        cout << "&#34;";
-    else if (x == '\'')
-        cout << "&#39;";
+    char x = s[pos];
+    int next_pos;
+    map<char, string> transformation;
+    transformation[' '] = "&#160;";
+    transformation['<'] = "&#60;";
+    transformation['>'] = "&#62;";
+    transformation['&'] = "&#38;";
+    transformation['\"'] = "&#34;";
+    transformation['\''] = "&#39;";
+    if (transformation.find(x) != transformation.end())
+    {
+        pos++;
+        cout << transformation[x];
+        return;
+    }
+    else if (x == '=' && check_if_need_mark(s, pos, next_pos))
+    {
+        debug(next_pos);
+        get_mark(s,pos,next_pos);
+        pos=next_pos+1;
+        return;
+    }
     else
-        cout << x;
+    {
+        cout << s[pos];
+        pos++;
+        return;
+    }
+}
+
+bool check_if_need_mark(string s, int now_pos, int &next_pos)
+{
+    if (now_pos != 0 && s[now_pos - 1] == '\\' || s[now_pos + 1] != '=')
+        return false;
+    next_pos = s.find('=', now_pos + 2);
+    if (next_pos == s.npos)
+        return false;
+    if (next_pos + 1 < s.size() && s[next_pos + 1] != '=')
+        return false;
+    if(now_pos+2==next_pos)
+        return false;
+    next_pos ++;
+    return true;
+}
+
+void get_mark(string s, int pos, int end_pos)
+{
+    cout << "<mark>";
+    for (int i = pos + 2; i <= end_pos - 2;)
+    {
+        turn_word(s, i);
+    }
+    cout << "</mark>";
 }
 
 int main(int argc, char *argv[])
 {
-    //init 无参数指令 初始化
     string s = argv[1];
     if (s == "init")
     {
