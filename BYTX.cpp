@@ -9,17 +9,17 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <set>
 #define debug(x) cout << #x << '\t' << x << "\n";
 #define Test cout << "this is a test line\n";
-#define turn_back_cmd           \
-    freopen("CON", "r", stdin); \
-    freopen("CON", "w", stdout)
 using namespace std;
 /**
  * task means that the last line is a task
  * normal means that not need such as </ul>
  * */
 string status = "normal";
+
+fstream write_file, read_file;
 
 //get the pwd
 string get_pwd();
@@ -41,6 +41,8 @@ bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime,
 //check a foleder if exist
 bool check_folder_if_exist(string folder_name);
 
+//check head and save at map
+bool check_head(map<string, string> &head_map);
 //add <head>
 void add_head(map<string, string> head_map);
 
@@ -142,13 +144,10 @@ bool create_file(string _pwd, string name)
             }
         }
     }
+    //create file
     if (file == NULL)
-        // 使用“写入”方式创建文件
         file = fopen(fileName, "w");
-    //关闭文件
-    // file = fopen(fileName, "r");
     fclose(file);
-
     if (file != NULL)
         return true;
     else
@@ -269,13 +268,13 @@ bool check_folder_if_exist(string folder_name)
 void make_new_file(string name)
 {
 
-    FILE *_file = freopen("configure.txt", "r", stdin);
+    FILE *_file = fopen("configure.txt", "r");
     if (_file == NULL)
     {
         cout << "Error.Not in the initialized directory.\n";
         return;
     }
-    freopen("CON", "r", stdin);
+    fclose(_file);
     if (name[name.size() - 1] != 'd' || name[name.size() - 2] != 'm' || name[name.size() - 3] != '.')
     {
         cout << "Error.Please create a markdown file\n";
@@ -287,13 +286,13 @@ void make_new_file(string name)
         cout << "Create new file Error\n";
         return;
     }
-    _file = freopen("_file\\file.txt", "r", stdin);
-    freopen("CON", "r", stdin);
+    _file = fopen("_file\\file.txt", "r");
     if (_file == NULL)
     {
         cout << "Error._file\\file.txt does not exist.\n";
         return;
     }
+    fclose(_file);
     ofstream fout("_file\\file.txt", ios::app);
     fout << name << '\n';
     fout.close();
@@ -307,27 +306,6 @@ void generate()
 
 void watch()
 {
-    FILE *_file = freopen("configure.txt", "r", stdin);
-    freopen("CON", "r", stdin);
-    if (_file == NULL)
-    {
-        cout << "Error.Not in the initialized directory.\n";
-        return;
-    }
-    // _file = freopen("_file\\file.txt", "r", stdin);
-    // if (_file == NULL)
-    // {
-    //     cout << "Error.file.txt does not exist.\n";
-    //     return;
-    // }
-    // else {
-    //     char xxxx[10000];
-    //     while(gets(xxxx)){
-    //          cout<<xxxx<<endl;
-    //     }
-
-    // }
-    // freopen("CON", "r", stdin);
 }
 
 void turn(string file_name)
@@ -346,62 +324,32 @@ void turn(string file_name)
     strcpy(_html_file_name, html_file_name.c_str());
     cout << "The html file will at " << _html_file_name << endl;
 
-    freopen(_file_file_name, "r", stdin);
-    freopen(_html_file_name, "w", stdout);
+    FILE *check_html_file_if_exist;
     char get_one_line[1000];
 
-    cout << "<!doctype html>\n";
-    cout << "<html>\n";
+    //check if the html file exist ,if not exist then create it.
+    check_html_file_if_exist = fopen(_html_file_name, "r");
+    if (check_html_file_if_exist == NULL)
+        fopen(_html_file_name, "w");
+    fclose(check_html_file_if_exist);
 
-    gets(get_one_line);
-    string the_first_line = get_one_line;
+    //open the markdown file and the html file
+    read_file.open(_file_file_name);
+    write_file.open(_html_file_name);
+
+    write_file << "<!doctype html>\n";
+    write_file << "<html>\n";
+
     int parameter_cnt = 0;
     map<string, string> head_map;
-
-    if (the_first_line != "---")
+    if (!check_head(head_map))
     {
-        freopen("CON", "r", stdin);
-        freopen("CON", "w", stdout);
-        cout << "Error.This file not exist parameter such as title.\n";
-        return;
+        cout << "Error.Wrong title.\n";
     }
 
-    while (gets(get_one_line))
-    {
-        string s = get_one_line;
-        if (s == "---")
-            break;
-        parameter_cnt++;
-        if (parameter_cnt == 4)
-        {
-            turn_back_cmd;
-            cout << "Error.Wrong parameter type.\n";
-            return;
-        }
-        if (s.find("title:") != s.npos)
-        {
-            head_map["title"] = s.substr(5);
-            cout << head_map["title"] << endl;
-        }
-        else if (s.find("tag:") != s.npos)
-        {
-            head_map["tag"] = s.substr(5);
-            cout << head_map["tag"] << endl;
-        }
-        else if (s.find("data:") != s.npos)
-        {
-            head_map["data"] = s.substr(5);
-            cout << head_map["data"] << endl;
-        }
-        else
-        {
-            turn_back_cmd;
-            cout << "Error.Wrong parameter type.\n";
-            return;
-        }
-    }
     add_head(head_map);
-    while (gets(get_one_line))
+
+    while (read_file.getline(get_one_line, 1000))
     {
         int pos = 0;
         string s = get_one_line;
@@ -421,13 +369,15 @@ void turn(string file_name)
             change_status("normal");
             get_hr(s);
         }
-        // cout << s << endl;
+        else
+        {
+            int s_lenth = s.length();
+            for (int i = 0; i < s_lenth;)
+                turn_word(s, i);
+        }
     }
 
-    cout << "</html>\n";
-
-    freopen("CON", "r", stdin);
-    freopen("CON", "w", stdout);
+    write_file << "</html>\n";
 }
 
 void change_status(string next_status)
@@ -436,18 +386,72 @@ void change_status(string next_status)
         return;
     else if (status == "task" && next_status == "normal")
     {
-        cout << "</ul>\n";
+        write_file << "</ul>\n";
     }
     else if (status == "normal" && next_status == "task")
     {
-        cout << "<ul>\n";
+        write_file << "<ul>\n";
     }
     status = next_status;
     return;
 }
 
+bool check_head(map<string, string> &head_map)
+{
+    char get_line[1000];
+    string line;
+
+    read_file.getline(get_line, 1000);
+    line = get_line;
+    if (line != "+++")
+        return false;
+    int cnt = 0;
+    while (read_file.getline(get_line, 1000))
+    {
+        line = get_line;
+        if (line == "+++")
+            break;
+        cnt++;
+        if (cnt == 4)
+            return false;
+        if (line.find("title:") == 0)
+            head_map["title"] = line.substr(6);
+        else if (line.find("data:") == 0)
+            head_map["data"] = line.substr(5);
+        else if (line.find("tag:") == 0)
+            head_map["tag"] = line.substr(4);
+        else
+            return false;
+    }
+    return true;
+}
+
 void add_head(map<string, string> head_map)
 {
+    write_file << "<head>";
+
+    write_file << "\t<title>";
+    write_file << "\t\t" << head_map["title"] << "\n";
+    write_file << "\t</title>\n";
+
+    write_file << "\t<meta charset=\"UTF-8\">\n";
+
+    write_file << "\t<!-- 数学公式渲染 -->\n";
+    write_file << "\t<script type=\"text/x-mathjax-config\">\n";
+    write_file << "\t\tMathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});\n";
+    write_file << "\t</script>\n";
+
+    write_file << "\t<script type=\"text/javascript\"\n";
+    write_file << "\t\tsrc=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\">\n";
+    write_file << "\t</script>\n";
+    write_file << "\t<!-- highlight.js渲染 -->\n";
+    write_file << "\t \n";
+    write_file << "\t \n";
+    write_file << "\t \n";
+    write_file << "\t \n";
+    write_file << "\t \n";
+    write_file << "\t \n";
+    write_file << "</head>\n";
 }
 
 bool check_if_title(string s)
@@ -469,10 +473,10 @@ void get_title(string s)
     for (int i = 0; i < 6; i++)
         if (s[i] == '#')
             cnt++;
-    cout << "\t<h" << cnt << ">";
+    write_file << "\t<h" << cnt << ">";
     for (int i = cnt; i < s.size();)
         turn_word(s, i);
-    cout << "</h" << cnt << ">\n";
+    write_file << "</h" << cnt << ">\n";
 }
 
 bool check_if_task(string s, int &pos, bool &if_check)
@@ -513,15 +517,15 @@ bool check_if_task(string s, int &pos, bool &if_check)
 void get_task(string s, int pos, bool if_check)
 {
     if (if_check)
-        cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\'checked/>";
+        write_file << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\'checked/>";
     else
-        cout << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
+        write_file << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
     for (int i = pos; i < s.size(); i++)
     {
         turn_word(s, i);
     }
-    cout << endl;
-    cout << "</li>\n";
+    write_file << endl;
+    write_file << "</li>\n";
 }
 
 bool check_hr(string s)
@@ -540,7 +544,7 @@ bool check_hr(string s)
         else
             return false;
     }
-    if (cnt_1&&cnt_1 + cnt_skip == s_size || cnt_2&&cnt_2 + cnt_skip == s_size)
+    if (cnt_1 && cnt_1 + cnt_skip == s_size || cnt_2 && cnt_2 + cnt_skip == s_size)
         return true;
     else
         return false;
@@ -548,7 +552,7 @@ bool check_hr(string s)
 
 void get_hr(string s)
 {
-    cout << "<hr />\n";
+    write_file << "<hr />\n";
 }
 
 void turn_word(string s, int &pos)
@@ -556,16 +560,45 @@ void turn_word(string s, int &pos)
     char x = s[pos];
     int next_pos;
     map<char, string> transformation;
+    set<char> change_word;
+    change_word.insert('*');
+    change_word.insert('\'');
+    change_word.insert('\"');
+    change_word.insert('(');
+    change_word.insert(')');
+    change_word.insert('[');
+    change_word.insert(']');
+    change_word.insert('{');
+    change_word.insert('}');
+    change_word.insert('#');
+    change_word.insert('$');
+    change_word.insert('^');
+    change_word.insert('+');
+    change_word.insert('-');
+    change_word.insert('_');
+    change_word.insert('=');
+    change_word.insert('.');
+    change_word.insert('!');
+    change_word.insert('`');
+    change_word.insert('~');
+
     transformation[' '] = "&#160;";
     transformation['<'] = "&#60;";
     transformation['>'] = "&#62;";
     transformation['&'] = "&#38;";
     transformation['\"'] = "&#34;";
     transformation['\''] = "&#39;";
-    if (transformation.find(x) != transformation.end())
+
+    if (x == '\\' && s.size() - 1 >= pos + 1 && change_word.find(s[pos + 1]) != change_word.end())
+    {
+        write_file << s[pos + 1];
+        pos += 2;
+        return;
+    }
+    else if (transformation.find(x) != transformation.end())
     {
         pos++;
-        cout << transformation[x];
+        write_file << transformation[x];
         return;
     }
     else if (x == '=' && check_if_need_mark(s, pos, next_pos))
@@ -576,7 +609,7 @@ void turn_word(string s, int &pos)
     }
     else
     {
-        cout << s[pos];
+        write_file << s[pos];
         pos++;
         return;
     }
@@ -599,12 +632,12 @@ bool check_if_need_mark(string s, int now_pos, int &next_pos)
 
 void get_mark(string s, int pos, int end_pos)
 {
-    cout << "<mark>";
+    write_file << "<mark>";
     for (int i = pos + 2; i <= end_pos - 2;)
     {
         turn_word(s, i);
     }
-    cout << "</mark>";
+    write_file << "</mark>";
 }
 
 int main(int argc, char *argv[])

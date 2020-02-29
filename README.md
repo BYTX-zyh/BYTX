@@ -20,8 +20,6 @@ tags:about init
 ---
 ```
 
-
-
 - [ ] init初始化结束后进行主题选择等，对index.htmltag.HTML初始化
 - [ ] 增加函数确定是否有文件被删除，同时增加delete操作
 - [ ] 检测markdown内部嵌套的HTML元素，与需要转义的<>等区分开
@@ -34,4 +32,4 @@ tags:about init
 - [ ] 在turn_word中加入行内检测
 - [ ] 加入对index和tag页面的更新
 - [ ] 对换行hr和代码块的区分
-- [ ] 后期修正文件操作，取消流定位
+- [ ] head部分的渲染考虑如何增加highlight.js以及如何保证主题的更改。
