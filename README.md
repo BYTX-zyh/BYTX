@@ -33,3 +33,4 @@ tags:about init
 - [ ] 加入对index和tag页面的更新
 - [ ] 对换行hr和代码块的区分
 - [ ] head部分的渲染考虑如何增加highlight.js以及如何保证主题的更改。
+- [ ] 考虑列表和斜体之间的区分

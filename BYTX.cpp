@@ -329,8 +329,7 @@ void turn(string file_name)
 
     //check if the html file exist ,if not exist then create it.
     check_html_file_if_exist = fopen(_html_file_name, "r");
-    if (check_html_file_if_exist == NULL)
-        fopen(_html_file_name, "w");
+    fopen(_html_file_name, "w");
     fclose(check_html_file_if_exist);
 
     //open the markdown file and the html file
@@ -348,7 +347,7 @@ void turn(string file_name)
     }
 
     add_head(head_map);
-
+    write_file << "<body>\n";
     while (read_file.getline(get_one_line, 1000))
     {
         int pos = 0;
@@ -376,7 +375,7 @@ void turn(string file_name)
                 turn_word(s, i);
         }
     }
-
+    write_file << "</body>\n";
     write_file << "</html>\n";
 }
 
@@ -582,7 +581,7 @@ void turn_word(string s, int &pos)
     change_word.insert('`');
     change_word.insert('~');
 
-    transformation[' '] = "&#160;";
+    // transformation[' '] = "&#160;";
     transformation['<'] = "&#60;";
     transformation['>'] = "&#62;";
     transformation['&'] = "&#38;";
@@ -591,24 +590,38 @@ void turn_word(string s, int &pos)
 
     if (x == '\\' && s.size() - 1 >= pos + 1 && change_word.find(s[pos + 1]) != change_word.end())
     {
+        //check if such as \'
         write_file << s[pos + 1];
         pos += 2;
         return;
     }
+    else if (x == '*' && pos + 1 <= s.size() - 1 && s[pos + 1] != '*' && s.find('*', pos + 1) != s.npos)
+    {
+        write_file << "<i>";
+        int i;
+        for (i = pos + 1; i < s.find('*', pos + 1);)
+            turn_word(s, i);
+        write_file << "</i>";
+        pos = i + 1;
+        return;
+    }
     else if (transformation.find(x) != transformation.end())
     {
+        // check if need turn to &
         pos++;
         write_file << transformation[x];
         return;
     }
     else if (x == '=' && check_if_need_mark(s, pos, next_pos))
     {
+        // check if mark
         get_mark(s, pos, next_pos);
         pos = next_pos + 1;
         return;
     }
     else
     {
+        //normal
         write_file << s[pos];
         pos++;
         return;
