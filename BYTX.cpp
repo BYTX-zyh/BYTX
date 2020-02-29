@@ -9,11 +9,12 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#pragma comment(lib, "urlmon.lib")
 #define debug(x) cout << #x << '\t' << x << "\n";
 #define Test cout << "this is a test line\n";
+#define turn_back_cmd           \
+    freopen("CON", "r", stdin); \
+    freopen("CON", "w", stdout)
 using namespace std;
-
 /**
  * task means that the last line is a task
  * normal means that not need such as </ul>
@@ -39,6 +40,9 @@ bool create_folder(string _pwd, string name);
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
 //check a foleder if exist
 bool check_folder_if_exist(string folder_name);
+
+//add <head>
+void add_head(map<string, string> head_map);
 
 //check if title
 bool check_if_title(string s);
@@ -340,7 +344,7 @@ void turn(string file_name)
     strcpy(_file_file_name, file_file_name.c_str());
     html_file_name = html_file_name.substr(0, html_file_name.size() - 3) + ".html";
     strcpy(_html_file_name, html_file_name.c_str());
-    cout << "The html file is " << _html_file_name << endl;
+    cout << "The html file will at " << _html_file_name << endl;
 
     freopen(_file_file_name, "r", stdin);
     freopen(_html_file_name, "w", stdout);
@@ -348,6 +352,55 @@ void turn(string file_name)
 
     cout << "<!doctype html>\n";
     cout << "<html>\n";
+
+    gets(get_one_line);
+    string the_first_line = get_one_line;
+    int parameter_cnt = 0;
+    map<string, string> head_map;
+
+    if (the_first_line != "---")
+    {
+        freopen("CON", "r", stdin);
+        freopen("CON", "w", stdout);
+        cout << "Error.This file not exist parameter such as title.\n";
+        return;
+    }
+
+    while (gets(get_one_line))
+    {
+        string s = get_one_line;
+        if (s == "---")
+            break;
+        parameter_cnt++;
+        if (parameter_cnt == 4)
+        {
+            turn_back_cmd;
+            cout << "Error.Wrong parameter type.\n";
+            return;
+        }
+        if (s.find("title:") != s.npos)
+        {
+            head_map["title"] = s.substr(5);
+            cout << head_map["title"] << endl;
+        }
+        else if (s.find("tag:") != s.npos)
+        {
+            head_map["tag"] = s.substr(5);
+            cout << head_map["tag"] << endl;
+        }
+        else if (s.find("data:") != s.npos)
+        {
+            head_map["data"] = s.substr(5);
+            cout << head_map["data"] << endl;
+        }
+        else
+        {
+            turn_back_cmd;
+            cout << "Error.Wrong parameter type.\n";
+            return;
+        }
+    }
+    add_head(head_map);
     while (gets(get_one_line))
     {
         int pos = 0;
@@ -391,6 +444,10 @@ void change_status(string next_status)
     }
     status = next_status;
     return;
+}
+
+void add_head(map<string, string> head_map)
+{
 }
 
 bool check_if_title(string s)
@@ -483,7 +540,7 @@ bool check_hr(string s)
         else
             return false;
     }
-    if (cnt_1 + cnt_skip == s_size || cnt_2 + cnt_skip == s_size)
+    if (cnt_1&&cnt_1 + cnt_skip == s_size || cnt_2&&cnt_2 + cnt_skip == s_size)
         return true;
     else
         return false;
@@ -513,9 +570,8 @@ void turn_word(string s, int &pos)
     }
     else if (x == '=' && check_if_need_mark(s, pos, next_pos))
     {
-        debug(next_pos);
-        get_mark(s,pos,next_pos);
-        pos=next_pos+1;
+        get_mark(s, pos, next_pos);
+        pos = next_pos + 1;
         return;
     }
     else
@@ -535,9 +591,9 @@ bool check_if_need_mark(string s, int now_pos, int &next_pos)
         return false;
     if (next_pos + 1 < s.size() && s[next_pos + 1] != '=')
         return false;
-    if(now_pos+2==next_pos)
+    if (now_pos + 2 == next_pos)
         return false;
-    next_pos ++;
+    next_pos++;
     return true;
 }
 
