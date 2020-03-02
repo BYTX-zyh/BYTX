@@ -14,6 +14,7 @@
 #define Test cout << "this is a test line\n";
 using namespace std;
 /**
+ * title means that <h1>
  * task means that the last line is a task
  * normal means that not need such as </ul>
  * */
@@ -63,6 +64,9 @@ void get_hr(string s);
 
 //check if reserved word and some other like ==mark==
 void turn_word(string s, int &pos);
+
+//check if need <i> x:*/_  next_pos mean that the last pos of  *
+bool check_if_i(char x, string s, int pos, int &next_pos);
 
 //check if need <Mark> for now_pos to next_pos now_pos:==code==:next_pos
 bool check_if_need_mark(string s, int now_pos, int &next_pos);
@@ -275,7 +279,9 @@ void make_new_file(string name)
         return;
     }
     fclose(_file);
-    if (name[name.size() - 1] != 'd' || name[name.size() - 2] != 'm' || name[name.size() - 3] != '.')
+    if (name[name.size() - 1] != 'd' ||
+        name[name.size() - 2] != 'm' ||
+        name[name.size() - 3] != '.')
     {
         cout << "Error.Please create a markdown file\n";
         return;
@@ -355,8 +361,9 @@ void turn(string file_name)
         bool task_if_check;
         if (check_if_title(s))
         {
-            change_status("normal");
+            change_status("h");
             get_title(s);
+            change_status("normal");
         }
         else if (check_if_task(s, pos, task_if_check))
         {
@@ -519,7 +526,7 @@ void get_task(string s, int pos, bool if_check)
         write_file << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\'checked/>";
     else
         write_file << "<li style=\"list-style-type: none;position: relative;\">\n\t<input type = \'checkbox\' disabled = \'disabled\' />";
-    for (int i = pos; i < s.size(); i++)
+    for (int i = pos; i < s.size();)
     {
         turn_word(s, i);
     }
@@ -556,8 +563,10 @@ void get_hr(string s)
 
 void turn_word(string s, int &pos)
 {
+    if (pos == 0 && status == "normal")
+        write_file << "<p>\n";
     char x = s[pos];
-    int next_pos;
+    int next_pos = pos;
     map<char, string> transformation;
     set<char> change_word;
     change_word.insert('*');
@@ -593,39 +602,69 @@ void turn_word(string s, int &pos)
         //check if such as \'
         write_file << s[pos + 1];
         pos += 2;
-        return;
     }
-    else if (x == '*' && pos + 1 <= s.size() - 1 && s[pos + 1] != '*' && s.find('*', pos + 1) != s.npos)
+    else if ((x == '*' || x == '_') && check_if_i(x, s, pos, next_pos))
     {
+        debug(pos);
+        debug(s[pos + 1]);
         write_file << "<i>";
         int i;
-        for (i = pos + 1; i < s.find('*', pos + 1);)
+        for (i = pos + 1; i < next_pos;)
+        {
             turn_word(s, i);
+        }
         write_file << "</i>";
-        pos = i + 1;
-        return;
+        pos = next_pos + 1;
+        debug(pos);
     }
     else if (transformation.find(x) != transformation.end())
     {
         // check if need turn to &
         pos++;
         write_file << transformation[x];
-        return;
     }
     else if (x == '=' && check_if_need_mark(s, pos, next_pos))
     {
         // check if mark
         get_mark(s, pos, next_pos);
         pos = next_pos + 1;
-        return;
     }
     else
     {
         //normal
+        // debug(pos);
         write_file << s[pos];
         pos++;
-        return;
     }
+    if (pos > s.size() - 1 && status == "normal")
+        write_file << "</p>\n";
+    return;
+}
+
+bool check_if_i(char x, string s, int pos, int &next_pos)
+{
+    if (pos + 1 > s.size() - 1 ||
+        pos + 1 <= s.size() - 1 && s[pos + 1] == x ||
+        s[pos + 1] == ' ' ||
+        s[pos - 1] == x ||
+        s.find(x, pos + 1) == s.npos)
+        return false;
+    int pos_check = pos;
+    while (pos_check <= s.size() - 1 && pos_check != s.npos)
+    {
+        pos_check = s.find(x, pos_check + 1);
+        if (s[pos_check - 1] != '\\' && s[pos_check - 1] != ' ' && s[pos_check - 1] != x &&
+            (pos_check == s.size() - 1 ||
+             pos_check + 1 <= s.size() - 1 && s[pos_check + 1] != x))
+        {
+            next_pos = pos_check;
+            return true;
+        }
+        if (pos_check == s.npos)
+            break;
+        pos_check++;
+    }
+    return false;
 }
 
 bool check_if_need_mark(string s, int now_pos, int &next_pos)
