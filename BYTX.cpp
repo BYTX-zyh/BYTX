@@ -67,6 +67,10 @@ void turn_word(string s, int &pos);
 
 //check if need <i> x:*/_  next_pos mean that the last pos of  *
 bool check_if_i(char x, string s, int pos, int &next_pos);
+//check if need <b> others like check_if_i pos->** code *<-next_pos*
+bool check_if_b(string s, int pos, int &next_pos);
+//check if need <b><i>
+bool check_if_bi(string s, int pos, int &next_pos);
 
 //check if need <Mark> for now_pos to next_pos now_pos:==code==:next_pos
 bool check_if_need_mark(string s, int now_pos, int &next_pos);
@@ -550,7 +554,7 @@ bool check_hr(string s)
         else
             return false;
     }
-    if (cnt_1 && cnt_1 + cnt_skip == s_size || cnt_2 && cnt_2 + cnt_skip == s_size)
+    if (cnt_1 >= 3 && cnt_1 + cnt_skip == s_size || cnt_2 >= 3 && cnt_2 + cnt_skip == s_size)
         return true;
     else
         return false;
@@ -603,19 +607,32 @@ void turn_word(string s, int &pos)
         write_file << s[pos + 1];
         pos += 2;
     }
+    else if (x == '*' && check_if_bi(s, pos, next_pos))
+    {
+        write_file << "<b><i>";
+        int i;
+        for (i = pos + 3; i < next_pos;)
+            turn_word(s, i);
+        write_file << "</i></b>";
+        pos = next_pos + 3;
+    }
+    else if (x == '*' && pos + 1 <= s.size() - 1 && s[pos + 1] == '*' && check_if_b(s, pos, next_pos))
+    {
+        write_file << "<b>";
+        int i;
+        for (i = pos + 2; i < next_pos;)
+            turn_word(s, i);
+        write_file << "</b>";
+        pos = next_pos + 2;
+    }
     else if ((x == '*' || x == '_') && check_if_i(x, s, pos, next_pos))
     {
-        debug(pos);
-        debug(s[pos + 1]);
         write_file << "<i>";
         int i;
         for (i = pos + 1; i < next_pos;)
-        {
             turn_word(s, i);
-        }
         write_file << "</i>";
         pos = next_pos + 1;
-        debug(pos);
     }
     else if (transformation.find(x) != transformation.end())
     {
@@ -632,7 +649,6 @@ void turn_word(string s, int &pos)
     else
     {
         //normal
-        // debug(pos);
         write_file << s[pos];
         pos++;
     }
@@ -641,10 +657,22 @@ void turn_word(string s, int &pos)
     return;
 }
 
+bool check_if_bi(string s, int pos, int &next_pos)
+{
+    next_pos=s.find("***", pos + 4);
+    if (pos + 6 > s.size() - 1 ||
+        s[pos + 1] != '*' || s[pos + 2] != '*' ||
+        s[pos + 3] == ' ' ||
+        next_pos == s.npos||
+        s[next_pos-1]==' ')
+        return false;
+    return true;
+}
+
 bool check_if_i(char x, string s, int pos, int &next_pos)
 {
     if (pos + 1 > s.size() - 1 ||
-        pos + 1 <= s.size() - 1 && s[pos + 1] == x ||
+        // pos + 1 <= s.size() - 1 && s[pos + 1] == x ||
         s[pos + 1] == ' ' ||
         s[pos - 1] == x ||
         s.find(x, pos + 1) == s.npos)
@@ -665,6 +693,16 @@ bool check_if_i(char x, string s, int pos, int &next_pos)
         pos_check++;
     }
     return false;
+}
+
+bool check_if_b(string s, int pos, int &next_pos)
+{
+    if (pos + 2 <= s.size() - 1 && s[pos + 2] == ' ' ||
+        pos != 0 && s[pos - 1] == '\\' ||
+        s.find("**", pos + 2) == s.npos)
+        return false;
+    next_pos = s.find("**", pos + 2);
+    return true;
 }
 
 bool check_if_need_mark(string s, int now_pos, int &next_pos)
