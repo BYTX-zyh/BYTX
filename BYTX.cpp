@@ -62,7 +62,7 @@ bool check_hr(string s);
 //need a <hr/>
 void get_hr(string s);
 
-bool check_math( const char * markdown_file_name, int now_line, int &next_line);
+bool check_math(const char *markdown_file_name, int now_line, int &next_line);
 
 //check if reserved word and some other like ==mark==
 void turn_word(string s, int &pos);
@@ -73,6 +73,8 @@ bool check_if_i(char x, string s, int pos, int &next_pos);
 bool check_if_b(string s, int pos, int &next_pos);
 //check if need <b><i>
 bool check_if_bi(string s, int pos, int &next_pos);
+//check if a img only check like ![alt](path)
+bool check_if_img(string s, int pos, int &next_pos);
 
 //check if need <Mark> for now_pos to next_pos now_pos:==code==:next_pos
 bool check_if_need_mark(string s, int now_pos, int &next_pos);
@@ -390,10 +392,11 @@ void turn(string file_name)
         }
         else if (s == "$$" && check_math(_file_file_name, line_cnt, next_line))
         {
-            write_file<<s;
-            while(line_cnt!=next_line){
+            write_file << s;
+            while (line_cnt != next_line)
+            {
                 read_file.getline(get_one_line, 1000);
-                write_file<<get_one_line;
+                write_file << get_one_line;
                 line_cnt++;
             }
         }
@@ -586,23 +589,24 @@ void get_hr(string s)
     write_file << "<hr />\n";
 }
 
-bool check_math( const char * markdown_file_name, int now_line, int &next_line)
+bool check_math(const char *markdown_file_name, int now_line, int &next_line)
 {
     fstream math_cnt;
-    next_line=now_line;
+    next_line = now_line;
     char get_one_line[1000];
     math_cnt.open(markdown_file_name);
-    while(now_line--){
-        math_cnt.getline(get_one_line,1000);
+    while (now_line--)
+    {
+        math_cnt.getline(get_one_line, 1000);
     }
-    while(math_cnt.getline(get_one_line,1000)){
-        string s=get_one_line;
+    while (math_cnt.getline(get_one_line, 1000))
+    {
+        string s = get_one_line;
         next_line++;
-        if(s=="$$")
+        if (s == "$$")
             return true;
     }
     return false;
-
 }
 
 void turn_word(string s, int &pos)
@@ -646,6 +650,18 @@ void turn_word(string s, int &pos)
         //check if such as \'
         write_file << s[pos + 1];
         pos += 2;
+    }
+    else if (x == '!' && check_if_img(s, pos, next_pos))
+    {
+        write_file << "<img alt=\"";
+        int i;
+        for(i=pos+2;s[i]!=']';)
+            turn_word(s,i);
+        write_file << "\"src=\"";
+         for(i+=2;s[i]!=')';)
+            turn_word(s,i);
+        write_file<<"\"/>";
+        pos=next_pos+1;
     }
     else if (x == '*' && check_if_bi(s, pos, next_pos))
     {
@@ -695,6 +711,25 @@ void turn_word(string s, int &pos)
     if (pos > s.size() - 1 && status == "normal")
         write_file << "</p>\n";
     return;
+}
+
+bool check_if_img(string s, int pos, int &next_pos)
+{
+    int npos = s.npos;
+    int find_m_r = s.find(']');
+
+    if (pos + 1 > s.size() - 1 ||
+        s[pos + 1] != '[' ||
+        find_m_r == npos)
+        return false;
+    int find_s_l = s.find('(', find_m_r);
+    if (find_s_l == npos || find_m_r + 1 != find_s_l)
+        return false;
+    int find_s_r = s.find(')', find_s_l + 1);
+    if (find_s_r == npos)
+        return false;
+    next_pos=find_s_r;
+    return true;
 }
 
 bool check_if_bi(string s, int pos, int &next_pos)
