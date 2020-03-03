@@ -62,6 +62,8 @@ bool check_hr(string s);
 //need a <hr/>
 void get_hr(string s);
 
+bool check_math( const char * markdown_file_name, int now_line, int &next_line);
+
 //check if reserved word and some other like ==mark==
 void turn_word(string s, int &pos);
 
@@ -354,12 +356,19 @@ void turn(string file_name)
     if (!check_head(head_map))
     {
         cout << "Error.Wrong title.\n";
+        return;
     }
 
     add_head(head_map);
     write_file << "<body>\n";
+
+    int line_cnt = 5;
+    int next_line;
+
     while (read_file.getline(get_one_line, 1000))
     {
+        line_cnt++;
+
         int pos = 0;
         string s = get_one_line;
         bool task_if_check;
@@ -378,6 +387,15 @@ void turn(string file_name)
         {
             change_status("normal");
             get_hr(s);
+        }
+        else if (s == "$$" && check_math(_file_file_name, line_cnt, next_line))
+        {
+            write_file<<s;
+            while(line_cnt!=next_line){
+                read_file.getline(get_one_line, 1000);
+                write_file<<get_one_line;
+                line_cnt++;
+            }
         }
         else
         {
@@ -448,7 +466,10 @@ void add_head(map<string, string> head_map)
 
     write_file << "\t<!-- 数学公式渲染 -->\n";
     write_file << "\t<script type=\"text/x-mathjax-config\">\n";
-    write_file << "\t\tMathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});\n";
+    write_file << "\t\t MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});\n";
+    write_file << "\t</script>\n";
+    write_file << "\t<script type=\"text/javascript\"  \n";
+    write_file << "\t\tsrc=\"http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML\">\n";
     write_file << "\t</script>\n";
 
     write_file << "\t<script type=\"text/javascript\"\n";
@@ -565,6 +586,25 @@ void get_hr(string s)
     write_file << "<hr />\n";
 }
 
+bool check_math( const char * markdown_file_name, int now_line, int &next_line)
+{
+    fstream math_cnt;
+    next_line=now_line;
+    char get_one_line[1000];
+    math_cnt.open(markdown_file_name);
+    while(now_line--){
+        math_cnt.getline(get_one_line,1000);
+    }
+    while(math_cnt.getline(get_one_line,1000)){
+        string s=get_one_line;
+        next_line++;
+        if(s=="$$")
+            return true;
+    }
+    return false;
+
+}
+
 void turn_word(string s, int &pos)
 {
     if (pos == 0 && status == "normal")
@@ -659,12 +699,12 @@ void turn_word(string s, int &pos)
 
 bool check_if_bi(string s, int pos, int &next_pos)
 {
-    next_pos=s.find("***", pos + 4);
+    next_pos = s.find("***", pos + 4);
     if (pos + 6 > s.size() - 1 ||
         s[pos + 1] != '*' || s[pos + 2] != '*' ||
         s[pos + 3] == ' ' ||
-        next_pos == s.npos||
-        s[next_pos-1]==' ')
+        next_pos == s.npos ||
+        s[next_pos - 1] == ' ')
         return false;
     return true;
 }
