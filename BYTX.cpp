@@ -47,10 +47,10 @@ bool check_head(map<string, string> &head_map);
 //add <head>
 void add_head(map<string, string> head_map);
 
-//check if title
-bool check_if_title(string s);
-//get a title
-void get_title(string s);
+//check if title title_style:atx,setext1(h1),setext2(h2)
+bool check_if_title(const char *markdown_file_name, const string &s, const int line_cnt, string &title_style);
+//get a title title_style:atx,setext1(h1),setext2(h2)
+void get_title(const string &s, const string &title_style);
 
 //check if task and return the first position of the task
 bool check_if_task(string s, int &pos, bool &if_check);
@@ -73,6 +73,8 @@ bool check_if_i(char x, string s, int pos, int &next_pos);
 bool check_if_b(string s, int pos, int &next_pos);
 //check if need <b><i>
 bool check_if_bi(string s, int pos, int &next_pos);
+//check if need <del>
+bool check_if_del(string s, int pos, int &next_pos);
 //check if a img only check like ![alt](path)
 bool check_if_img(string s, int pos, int &next_pos);
 
@@ -374,11 +376,17 @@ void turn(string file_name)
         int pos = 0;
         string s = get_one_line;
         bool task_if_check;
-        if (check_if_title(s))
+        string title_style;
+        if (check_if_title(_file_file_name, s, line_cnt, title_style))
         {
             change_status("h");
-            get_title(s);
+            get_title(s, title_style);
             change_status("normal");
+            if (title_style != "atx")
+            {
+                read_file.getline(get_one_line, 1000);
+                line_cnt++;
+            }
         }
         else if (check_if_task(s, pos, task_if_check))
         {
@@ -488,7 +496,7 @@ void add_head(map<string, string> head_map)
     write_file << "</head>\n";
 }
 
-bool check_if_title(string s)
+bool check_if_title(const char *markdown_file_name, const string &s, const int line_cnt, string &title_style)
 {
     if (s.size() >= 2 && s.substr(0, 2) == "# " ||
         s.size() >= 3 && s.substr(0, 3) == "## " ||
@@ -496,21 +504,83 @@ bool check_if_title(string s)
         s.size() >= 5 && s.substr(0, 5) == "#### " ||
         s.size() >= 6 && s.substr(0, 6) == "##### " ||
         s.size() >= 7 && s.substr(0, 7) == "###### ")
+    {
+        title_style = "atx";
         return true;
+    }
     else
-        return false;
+    {
+        fstream title_check_file;
+        char get_line[1000];
+        title_check_file.open(markdown_file_name);
+        int cnt = line_cnt + 1;
+        while (cnt--)
+        {
+            title_check_file.getline(get_line, 1000);
+        }
+        title_check_file.close();
+        string next_line = get_line;
+        if (next_line[0] == '-')
+        {
+            for (int i = 0; i < next_line.size(); i++)
+            {
+                if (next_line[i] != '-')
+                    return false;
+            }
+            title_style = "setext1";
+            return true;
+        }
+        else if (next_line[0] == '=')
+        {
+            for (int i = 0; i < next_line.size(); i++)
+            {
+                if (next_line[i] != '=')
+                    return false;
+            }
+            title_style = "setext2";
+            return true;
+        }
+        else
+            return false;
+    }
 }
 
-void get_title(string s)
+void get_title(const string &s, const string &title_style)
 {
-    int cnt = 0;
-    for (int i = 0; i < 6; i++)
-        if (s[i] == '#')
-            cnt++;
-    write_file << "\t<h" << cnt << ">";
-    for (int i = cnt; i < s.size();)
-        turn_word(s, i);
-    write_file << "</h" << cnt << ">\n";
+    if (title_style == "atx")
+    {
+        int cnt = 0;
+        for (int i = 0; i < 6; i++)
+            if (s[i] == '#')
+                cnt++;
+        write_file << "\t<h" << cnt << ">";
+
+        int end = s.size() - 1;
+        while (s[end] == ' ')
+            end--;
+        for (; end; end--)
+            if (s[end] != '#')
+                break;
+        end = (s[end] == ' ') ? end - 1 : s.size() - 1;
+        //### dsfdf sdf d
+        for (int i = cnt + 1; i <= end;)
+            turn_word(s, i);
+        write_file << "</h" << cnt << ">\n";
+    }
+    else if (title_style == "setext1")
+    {
+        write_file << "<h2>";
+        for (int i = 0; i < s.size();)
+            turn_word(s, i);
+        write_file << "</h2>\n";
+    }
+    else
+    {
+        write_file << "<h1>";
+        for (int i = 0; i < s.size();)
+            turn_word(s, i);
+        write_file << "</h1>\n";
+    }
 }
 
 bool check_if_task(string s, int &pos, bool &if_check)
@@ -604,8 +674,12 @@ bool check_math(const char *markdown_file_name, int now_line, int &next_line)
         string s = get_one_line;
         next_line++;
         if (s == "$$")
+        {
+            math_cnt.close();
             return true;
+        }
     }
+    math_cnt.close();
     return false;
 }
 
@@ -617,27 +691,28 @@ void turn_word(string s, int &pos)
     int next_pos = pos;
     map<char, string> transformation;
     set<char> change_word;
-    change_word.insert('*');
-    change_word.insert('\'');
-    change_word.insert('\"');
-    change_word.insert('(');
-    change_word.insert(')');
-    change_word.insert('[');
-    change_word.insert(']');
-    change_word.insert('{');
-    change_word.insert('}');
-    change_word.insert('#');
-    change_word.insert('$');
-    change_word.insert('^');
-    change_word.insert('+');
-    change_word.insert('-');
-    change_word.insert('_');
-    change_word.insert('=');
-    change_word.insert('.');
-    change_word.insert('!');
-    change_word.insert('`');
-    change_word.insert('~');
-
+    {
+        change_word.insert('*');
+        change_word.insert('\'');
+        change_word.insert('\"');
+        change_word.insert('(');
+        change_word.insert(')');
+        change_word.insert('[');
+        change_word.insert(']');
+        change_word.insert('{');
+        change_word.insert('}');
+        change_word.insert('#');
+        change_word.insert('$');
+        change_word.insert('^');
+        change_word.insert('+');
+        change_word.insert('-');
+        change_word.insert('_');
+        change_word.insert('=');
+        change_word.insert('.');
+        change_word.insert('!');
+        change_word.insert('`');
+        change_word.insert('~');
+    }
     // transformation[' '] = "&#160;";
     transformation['<'] = "&#60;";
     transformation['>'] = "&#62;";
@@ -651,17 +726,26 @@ void turn_word(string s, int &pos)
         write_file << s[pos + 1];
         pos += 2;
     }
+    // else if (x == '~' && check_if_del(s, pos, next_pos))
+    // {
+    //     write_file<<"<del>";
+    //     int i;
+    //     for(i=pos+2;i<next_pos;)
+    //         turn_word(s,i);
+    //     write_file<<"</del>";
+    //     pos=next_pos+2;
+    // }
     else if (x == '!' && check_if_img(s, pos, next_pos))
     {
         write_file << "<img alt=\"";
         int i;
-        for(i=pos+2;s[i]!=']';)
-            turn_word(s,i);
+        for (i = pos + 2; s[i] != ']';)
+            turn_word(s, i);
         write_file << "\"src=\"";
-         for(i+=2;s[i]!=')';)
-            turn_word(s,i);
-        write_file<<"\"/>";
-        pos=next_pos+1;
+        for (i += 2; s[i] != ')';)
+            turn_word(s, i);
+        write_file << "\"/>";
+        pos = next_pos + 1;
     }
     else if (x == '*' && check_if_bi(s, pos, next_pos))
     {
@@ -713,6 +797,18 @@ void turn_word(string s, int &pos)
     return;
 }
 
+// bool check_if_del(string s, int pos, int &next_pos)
+// {
+//     next_pos=s.find("~~",pos+2);
+//     if (pos + 4 > s.size() ||
+//         s.find("~~", pos) != pos ||
+//         s[pos + 2] == ' '||
+//         next_pos==s.npos||
+//         s[next_pos-1]==' ')
+//         return false;
+//     return true;
+// }
+
 bool check_if_img(string s, int pos, int &next_pos)
 {
     int npos = s.npos;
@@ -728,7 +824,7 @@ bool check_if_img(string s, int pos, int &next_pos)
     int find_s_r = s.find(')', find_s_l + 1);
     if (find_s_r == npos)
         return false;
-    next_pos=find_s_r;
+    next_pos = find_s_r;
     return true;
 }
 
