@@ -68,9 +68,9 @@ bool check_math(const char *markdown_file_name, int now_line, int &next_line);
 void turn_word(string s, int &pos);
 
 //check if need <i> x:*/_  next_pos mean that the last pos of  *
-bool check_if_i(char x, string s, int pos, int &next_pos);
+bool check_if_em(char x, string s, int pos, int &next_pos);
 //check if need <b> others like check_if_i pos->** code *<-next_pos*
-bool check_if_b(string s, int pos, int &next_pos);
+bool check_if_strong(char x, string s, int pos, int &next_pos);
 //check if need <b><i>
 bool check_if_bi(string s, int pos, int &next_pos);
 //check if need <del>
@@ -685,6 +685,8 @@ bool check_math(const char *markdown_file_name, int now_line, int &next_line)
 
 void turn_word(string s, int &pos)
 {
+    debug(pos);
+    debug(s[pos]);
     if (pos == 0 && status == "normal")
         write_file << "<p>\n";
     char x = s[pos];
@@ -711,7 +713,7 @@ void turn_word(string s, int &pos)
         change_word.insert('.');
         change_word.insert('!');
         change_word.insert('`');
-        change_word.insert('~');
+        change_word.insert('\\');
     }
     // transformation[' '] = "&#160;";
     transformation['<'] = "&#60;";
@@ -726,15 +728,6 @@ void turn_word(string s, int &pos)
         write_file << s[pos + 1];
         pos += 2;
     }
-    // else if (x == '~' && check_if_del(s, pos, next_pos))
-    // {
-    //     write_file<<"<del>";
-    //     int i;
-    //     for(i=pos+2;i<next_pos;)
-    //         turn_word(s,i);
-    //     write_file<<"</del>";
-    //     pos=next_pos+2;
-    // }
     else if (x == '!' && check_if_img(s, pos, next_pos))
     {
         write_file << "<img alt=\"";
@@ -747,31 +740,22 @@ void turn_word(string s, int &pos)
         write_file << "\"/>";
         pos = next_pos + 1;
     }
-    else if (x == '*' && check_if_bi(s, pos, next_pos))
+    else if (check_if_strong(x, s, pos, next_pos))
     {
-        write_file << "<b><i>";
+        write_file << "<strong>";
         int i;
-        for (i = pos + 3; i < next_pos;)
+        for (i = pos + 2; i <= next_pos - 1;)
             turn_word(s, i);
-        write_file << "</i></b>";
-        pos = next_pos + 3;
-    }
-    else if (x == '*' && pos + 1 <= s.size() - 1 && s[pos + 1] == '*' && check_if_b(s, pos, next_pos))
-    {
-        write_file << "<b>";
-        int i;
-        for (i = pos + 2; i < next_pos;)
-            turn_word(s, i);
-        write_file << "</b>";
+        write_file << "</strong>";
         pos = next_pos + 2;
     }
-    else if ((x == '*' || x == '_') && check_if_i(x, s, pos, next_pos))
+    else if (check_if_em(x, s, pos, next_pos))
     {
-        write_file << "<i>";
+        write_file << "<em>";
         int i;
         for (i = pos + 1; i < next_pos;)
             turn_word(s, i);
-        write_file << "</i>";
+        write_file << "</em>";
         pos = next_pos + 1;
     }
     else if (transformation.find(x) != transformation.end())
@@ -796,18 +780,6 @@ void turn_word(string s, int &pos)
         write_file << "</p>\n";
     return;
 }
-
-// bool check_if_del(string s, int pos, int &next_pos)
-// {
-//     next_pos=s.find("~~",pos+2);
-//     if (pos + 4 > s.size() ||
-//         s.find("~~", pos) != pos ||
-//         s[pos + 2] == ' '||
-//         next_pos==s.npos||
-//         s[next_pos-1]==' ')
-//         return false;
-//     return true;
-// }
 
 bool check_if_img(string s, int pos, int &next_pos)
 {
@@ -840,40 +812,80 @@ bool check_if_bi(string s, int pos, int &next_pos)
     return true;
 }
 
-bool check_if_i(char x, string s, int pos, int &next_pos)
+bool check_if_em(char x, string s, int pos, int &next_pos)
 {
-    if (pos + 1 > s.size() - 1 ||
-        // pos + 1 <= s.size() - 1 && s[pos + 1] == x ||
-        s[pos + 1] == ' ' ||
-        s[pos - 1] == x ||
-        s.find(x, pos + 1) == s.npos)
+    /**
+     * 是否还有后续字符以及另一个强调符的位置
+     * 第一个强调符前后都存在一个空格
+     * 后续没有强调符
+     * */
+    if (x != '*' && x != '_')
         return false;
-    int pos_check = pos;
-    while (pos_check <= s.size() - 1 && pos_check != s.npos)
+    next_pos = s.find(x, pos + 2);
+    if (pos + 2 > s.size() - 1 ||
+        (pos == 0 || pos != 0 && s[pos - 1] == ' ') && s[pos + 1] == ' ' ||
+        next_pos == s.npos
+        )
+        return false;
+    int pos_check = pos + 1;
+    while (pos_check <= s.size() - 1)
     {
-        pos_check = s.find(x, pos_check + 1);
-        if (s[pos_check - 1] != '\\' && s[pos_check - 1] != ' ' && s[pos_check - 1] != x &&
-            (pos_check == s.size() - 1 ||
-             pos_check + 1 <= s.size() - 1 && s[pos_check + 1] != x))
+        pos_check = s.find(x, pos_check);
+        if (pos_check == s.npos)
+            break;
+        if (s[pos_check - 1] != '\\' &&
+            !(s[pos_check - 1] == ' ' && pos_check + 1 <= s.size() - 1 && s[pos_check + 1] == ' ') &&
+            s[pos_check - 1] != x)
         {
             next_pos = pos_check;
             return true;
         }
-        if (pos_check == s.npos)
-            break;
         pos_check++;
     }
     return false;
 }
 
-bool check_if_b(string s, int pos, int &next_pos)
+bool check_if_strong(char x, string s, int pos, int &next_pos)
 {
-    if (pos + 2 <= s.size() - 1 && s[pos + 2] == ' ' ||
-        pos != 0 && s[pos - 1] == '\\' ||
-        s.find("**", pos + 2) == s.npos)
+    if (!(pos + 1 <= s.size() - 1 &&
+          (x == '*' && s[pos + 1] == '*' || x == '_' && s[pos + 1] == '_')))
         return false;
-    next_pos = s.find("**", pos + 2);
-    return true;
+    int s_size = s.size();
+    if (pos + 2 > s_size - 1 ||
+        pos + 2 <= s_size - 1 && s[pos + 2] == ' ' && (pos != 0 && s[pos - 1] == ' ') ||
+        pos != 0 && s[pos - 1] == '\\')
+        return false;
+    int pos_check = pos + 2;
+    while (s[pos] == x)
+        pos++;
+    string xx;
+    if (x == '*')
+        xx = "**";
+    else
+        xx = "__";
+    bool flag = false;
+    while (pos <= s_size - 1)
+    {
+        pos = s.find(xx, pos + 1);
+        if (pos == s.npos)
+            break;
+        if (s[pos - 1] == ' ' && (pos + 1 != s_size - 1 || pos + 2 <= s_size - 1 && s[pos + 2] == ' ') ||
+            s[pos - 1] == '\\')
+        {
+            pos++;
+            continue;
+        }
+        else
+        {
+            pos++;
+            flag = true;
+            next_pos = pos;
+        }
+    }
+    if (flag)
+        return true;
+    else
+        return false;
 }
 
 bool check_if_need_mark(string s, int now_pos, int &next_pos)
