@@ -65,26 +65,24 @@ void get_hr(string s);
 bool check_math(const char *markdown_file_name, int now_line, int &next_line);
 
 //check if reserved word and some other like ==mark==
-void turn_word(string s, int &pos);
+void turn_word(string &s, int &pos);
 
-//check if need <i> x:*/_  next_pos mean that the last pos of  *
-bool check_if_em(char x, string s, int pos, int &next_pos);
-//check if need <b> others like check_if_i pos->** code *<-next_pos*
-bool check_if_strong(char x, string s, int pos, int &next_pos);
-//check if need <b><i>
-bool check_if_bi(string s, int pos, int &next_pos);
-//check if need <del>
-bool check_if_del(string s, int pos, int &next_pos);
+//check if need <em> x:*/_  next_pos mean that the last pos of  *
+bool check_if_em(char x, string &s, int pos, int &next_pos);
+//check if need <strong> others like check_if_i pos->** code *<-next_pos*
+bool check_if_strong(char x, string &s, int pos, int &next_pos);
 //check if a img only check like ![alt](path)
-bool check_if_img(string s, int pos, int &next_pos);
+bool check_if_img(string &s, int pos, int &next_pos);
+//check if inline math
+bool check_if_inline_math(const string &s, int pos, int &next_pos);
 
 //check if need <Mark> for now_pos to next_pos now_pos:==code==:next_pos
-bool check_if_need_mark(string s, int now_pos, int &next_pos);
+bool check_if_need_mark(string &s, int now_pos, int &next_pos);
 //get a pos need mark for pos to end_pos pos:==code==:end_pos
 void get_mark(string s, int pos, int end_pos);
 
 //change status and print some code such as <\ul>
-void change_status(string next_status);
+void change_status(string &next_status);
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
 {
@@ -245,6 +243,12 @@ void init()
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
+    status = create_file("_file_html", "html.txt");
+    if (!status)
+    {
+        cout << "Init Error\nPlease fix the problem and try again";
+        return;
+    }
     cout << "Initialization completed successfully";
     return;
 }
@@ -322,6 +326,26 @@ void generate()
 
 void watch()
 {
+    /**
+     *watch_status:默认为all 即检查所有 changed:检查更改过的 
+     * 
+     **/
+    fstream watch_file;
+    FILE *check_file_exist;
+    char get_line[1000];
+    set<string> markdown_file_set;
+    set<string> html_file_set;
+
+    //check if exist
+
+    watch_file.open("_file\\file.txt");
+    while (watch_file.getline(get_line, 1000))
+    {
+        string s = get_line;
+        markdown_file_set.insert(s);
+    }
+    watch_file.close();
+    watch_file.open("_file_html\\html.txt");
 }
 
 void turn(string file_name)
@@ -419,7 +443,7 @@ void turn(string file_name)
     write_file << "</html>\n";
 }
 
-void change_status(string next_status)
+void change_status(string &next_status)
 {
     if (status == next_status)
         return;
@@ -683,10 +707,8 @@ bool check_math(const char *markdown_file_name, int now_line, int &next_line)
     return false;
 }
 
-void turn_word(string s, int &pos)
+void turn_word(string &s, int &pos)
 {
-    debug(pos);
-    debug(s[pos]);
     if (pos == 0 && status == "normal")
         write_file << "<p>\n";
     char x = s[pos];
@@ -724,7 +746,6 @@ void turn_word(string s, int &pos)
 
     if (x == '\\' && s.size() - 1 >= pos + 1 && change_word.find(s[pos + 1]) != change_word.end())
     {
-        //check if such as \'
         write_file << s[pos + 1];
         pos += 2;
     }
@@ -758,6 +779,12 @@ void turn_word(string s, int &pos)
         write_file << "</em>";
         pos = next_pos + 1;
     }
+    else if (x == '$' && check_if_inline_math(s, pos, next_pos))
+    {
+        for (int i = pos; i <= next_pos; i++)
+            write_file << s[i];
+        pos = next_pos + 1;
+    }
     else if (transformation.find(x) != transformation.end())
     {
         // check if need turn to &
@@ -766,7 +793,6 @@ void turn_word(string s, int &pos)
     }
     else if (x == '=' && check_if_need_mark(s, pos, next_pos))
     {
-        // check if mark
         get_mark(s, pos, next_pos);
         pos = next_pos + 1;
     }
@@ -781,7 +807,15 @@ void turn_word(string s, int &pos)
     return;
 }
 
-bool check_if_img(string s, int pos, int &next_pos)
+bool check_if_inline_math(const string &s, int pos, int &next_pos)
+{
+    next_pos = s.find('$', pos + 1);
+    if (next_pos != pos + 1 && next_pos != s.npos && (s[next_pos - 1] != '\\' || next_pos == 0))
+        return true;
+    return false;
+}
+
+bool check_if_img(string &s, int pos, int &next_pos)
 {
     int npos = s.npos;
     int find_m_r = s.find(']');
@@ -800,19 +834,7 @@ bool check_if_img(string s, int pos, int &next_pos)
     return true;
 }
 
-bool check_if_bi(string s, int pos, int &next_pos)
-{
-    next_pos = s.find("***", pos + 4);
-    if (pos + 6 > s.size() - 1 ||
-        s[pos + 1] != '*' || s[pos + 2] != '*' ||
-        s[pos + 3] == ' ' ||
-        next_pos == s.npos ||
-        s[next_pos - 1] == ' ')
-        return false;
-    return true;
-}
-
-bool check_if_em(char x, string s, int pos, int &next_pos)
+bool check_if_em(char x, string &s, int pos, int &next_pos)
 {
     /**
      * 是否还有后续字符以及另一个强调符的位置
@@ -824,8 +846,7 @@ bool check_if_em(char x, string s, int pos, int &next_pos)
     next_pos = s.find(x, pos + 2);
     if (pos + 2 > s.size() - 1 ||
         (pos == 0 || pos != 0 && s[pos - 1] == ' ') && s[pos + 1] == ' ' ||
-        next_pos == s.npos
-        )
+        next_pos == s.npos)
         return false;
     int pos_check = pos + 1;
     while (pos_check <= s.size() - 1)
@@ -845,7 +866,7 @@ bool check_if_em(char x, string s, int pos, int &next_pos)
     return false;
 }
 
-bool check_if_strong(char x, string s, int pos, int &next_pos)
+bool check_if_strong(char x, string &s, int pos, int &next_pos)
 {
     if (!(pos + 1 <= s.size() - 1 &&
           (x == '*' && s[pos + 1] == '*' || x == '_' && s[pos + 1] == '_')))
@@ -888,7 +909,7 @@ bool check_if_strong(char x, string s, int pos, int &next_pos)
         return false;
 }
 
-bool check_if_need_mark(string s, int now_pos, int &next_pos)
+bool check_if_need_mark(string &s, int now_pos, int &next_pos)
 {
     if (now_pos != 0 && s[now_pos - 1] == '\\' || s[now_pos + 1] != '=')
         return false;

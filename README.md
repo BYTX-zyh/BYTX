@@ -43,3 +43,4 @@ tags:about init
 - [ ] 加入对index和tag页面的更新
 - [ ] head部分的渲染考虑如何增加highlight.js以及如何保证主题的更改。
 - [ ] markdown的换行检测，考虑如何进行检测末尾两个空格或者是换行
+- [ ] 数学公式转义
