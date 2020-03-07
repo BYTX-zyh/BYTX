@@ -6,6 +6,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <cstring>
+#include <algorithm>
 #include <fstream>
 #include <vector>
 #include <map>
@@ -29,8 +30,7 @@ string get_pwd();
 void init();
 //
 void generate();
-//check which need turn
-void watch();
+
 //turn markdown to HTML
 void turn(string file_name);
 //create file and check if at the file inited
@@ -38,9 +38,11 @@ bool create_file(string _pwd, string name);
 //create folder and check if at the file inited
 bool create_folder(string _pwd, string name);
 //get the time about the file
-bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
+// bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime);
 //check a foleder if exist
 bool check_folder_if_exist(string folder_name);
+// get all file name of pwd
+void getFiles(string path, vector<string> &files);
 
 //check head and save at map
 bool check_head(map<string, string> &head_map);
@@ -65,7 +67,7 @@ void get_hr(string s);
 bool check_math(const char *markdown_file_name, int now_line, int &next_line);
 
 //check if reserved word and some other like ==mark==
-void turn_word(string &s, int &pos);
+void turn_word(string s, int &pos);
 
 //check if need <em> x:*/_  next_pos mean that the last pos of  *
 bool check_if_em(char x, string &s, int pos, int &next_pos);
@@ -82,12 +84,13 @@ bool check_if_need_mark(string &s, int now_pos, int &next_pos);
 void get_mark(string s, int pos, int end_pos);
 
 //change status and print some code such as <\ul>
-void change_status(string &next_status);
+void change_status(string next_status);
 
-bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime)
+bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime, SYSTEMTIME &stLocal3)
 {
     FILETIME ftCreate, ftAccess, ftWrite;
-    SYSTEMTIME stUTC1, stLocal1, stUTC2, stLocal2, stUTC3, stLocal3;
+    SYSTEMTIME stUTC1, stLocal1, stUTC2, stLocal2, stUTC3;
+
     // -------->获取 FileTime
     if (!GetFileTime(hFile, &ftCreate, &ftAccess, &ftWrite))
     {
@@ -101,17 +104,82 @@ bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime,
     SystemTimeToTzSpecificLocalTime(NULL, &stUTC1, &stLocal1);
     SystemTimeToTzSpecificLocalTime(NULL, &stUTC2, &stLocal2);
     SystemTimeToTzSpecificLocalTime(NULL, &stUTC3, &stLocal3);
+
     // ---------> Show the  date and time.
-    // wsprintf(lpszCreationTime, "C:\t%02d/%02d/%d  %02d:%02d",
-    //          stLocal1.wDay, stLocal1.wMonth, stLocal1.wYear,
-    //          stLocal1.wHour, stLocal1.wMinute);
-    // wsprintf(lpszLastAccessTime, "last visit:\t%02d/%02d/%d  %02d:%02d",
-    //          stLocal2.wDay, stLocal2.wMonth, stLocal2.wYear,
-    //          stLocal2.wHour, stLocal2.wMinute);
-    wsprintf(lpszLastWriteTime, "last change time:\t%02d/%02d/%d  %02d:%02d\n",
+    wsprintf(lpszCreationTime, "C:\t%02d/%02d/%d  %02d:%02d",
+             stLocal1.wDay, stLocal1.wMonth, stLocal1.wYear,
+             stLocal1.wHour, stLocal1.wMinute);
+    wsprintf(lpszLastAccessTime, "last visit:\t%02d/%02d/%d  %02d:%02d",
+             stLocal2.wDay, stLocal2.wMonth, stLocal2.wYear,
+             stLocal2.wHour, stLocal2.wMinute);
+    wsprintf(lpszLastWriteTime, "last change:\t%02d/%02d/%d  %02d:%02d",
              stLocal3.wDay, stLocal3.wMonth, stLocal3.wYear,
              stLocal3.wHour, stLocal3.wMinute);
     return true;
+}
+
+void generate()
+{
+    /**
+     *x: a；all c:changed 
+     * 
+     **/
+    vector<string> markdown_file;
+    vector<string> html_file;
+    getFiles("_file", markdown_file);
+    getFiles("_file_html", html_file);
+
+    for (int i = 0; i < markdown_file.size(); i++)
+    {
+        string filename = markdown_file[i];
+        if (filename.substr(filename.size() - 3) != ".md")
+        {
+            cout << "Error.Some file not markdown file\n";
+            return;
+        }
+    }
+    for (int i = 0; i < html_file.size(); i++)
+    {
+        string filename = html_file[i];
+        if (filename.substr(filename.size() - 5) != ".html")
+        {
+            cout << "Error.Some file not html file\n";
+            return;
+        }
+    }
+
+    for (int i = 0; i < markdown_file.size(); i++)
+    {
+        string markdown_file_name = markdown_file[i].substr(6, markdown_file[i].size() - 9);
+        debug(markdown_file_name);
+        string html_file_name = "_file_html\\" + markdown_file_name + ".html";
+        vector<string>::iterator f = find(html_file.begin(), html_file.end(), html_file_name);
+        if (f != html_file.end())
+        {
+            char file[1000];
+            strcpy(file, markdown_file[i].c_str());
+            HANDLE hFile;
+            TCHAR szCreationTime[30], szLastAccessTime[30], szLastWriteTime[30];
+            SYSTEMTIME stLocal_md,stLocal_html;
+            hFile = CreateFile(file, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            GetFileTime(hFile, szCreationTime, szLastAccessTime, szLastWriteTime, stLocal_md);
+            if (hFile == INVALID_HANDLE_VALUE)
+                return;
+            CloseHandle(hFile);
+
+            strcpy(file, html_file_name.c_str());
+            hFile = CreateFile(file, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+            GetFileTime(hFile, szCreationTime, szLastAccessTime, szLastWriteTime, stLocal_md);
+            if (hFile == INVALID_HANDLE_VALUE)
+                return;
+            CloseHandle(hFile);
+        }
+        else
+        {
+            string s = markdown_file_name + ".md";
+            turn(s);
+        }
+    }
 }
 
 string get_pwd()
@@ -237,12 +305,6 @@ void init()
         cout << "Init Error\nPlease fix the problem and try again";
         return;
     }
-    status = create_file("_file", "file.txt");
-    if (!status)
-    {
-        cout << "Init Error\nPlease fix the problem and try again";
-        return;
-    }
     status = create_file("_file_html", "html.txt");
     if (!status)
     {
@@ -306,46 +368,32 @@ void make_new_file(string name)
         cout << "Create new file Error\n";
         return;
     }
-    _file = fopen("_file\\file.txt", "r");
-    if (_file == NULL)
-    {
-        cout << "Error._file\\file.txt does not exist.\n";
-        return;
-    }
-    fclose(_file);
-    ofstream fout("_file\\file.txt", ios::app);
-    fout << name << '\n';
-    fout.close();
-    cout << "add new file name in file.txt" << endl;
     return;
 }
 
-void generate()
+void getFiles(string path, vector<string> &files)
 {
-}
-
-void watch()
-{
-    /**
-     *watch_status:默认为all 即检查所有 changed:检查更改过的 
-     * 
-     **/
-    fstream watch_file;
-    FILE *check_file_exist;
-    char get_line[1000];
-    set<string> markdown_file_set;
-    set<string> html_file_set;
-
-    //check if exist
-
-    watch_file.open("_file\\file.txt");
-    while (watch_file.getline(get_line, 1000))
+    //文件句柄
+    long hFile = 0;
+    //文件信息
+    struct _finddata_t fileinfo;
+    string p;
+    if ((hFile = _findfirst(p.assign(path).append("\\*").c_str(), &fileinfo)) != -1)
     {
-        string s = get_line;
-        markdown_file_set.insert(s);
+        do
+        {
+            //如果是目录,迭代之
+            //如果不是,加入列表
+            if ((fileinfo.attrib & _A_SUBDIR))
+            {
+                if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0)
+                    getFiles(p.assign(path).append("\\").append(fileinfo.name), files);
+            }
+            else
+                files.push_back(p.assign(path).append("\\").append(fileinfo.name));
+        } while (_findnext(hFile, &fileinfo) == 0);
+        _findclose(hFile);
     }
-    watch_file.close();
-    watch_file.open("_file_html\\html.txt");
 }
 
 void turn(string file_name)
@@ -443,7 +491,7 @@ void turn(string file_name)
     write_file << "</html>\n";
 }
 
-void change_status(string &next_status)
+void change_status(string next_status)
 {
     if (status == next_status)
         return;
@@ -707,7 +755,7 @@ bool check_math(const char *markdown_file_name, int now_line, int &next_line)
     return false;
 }
 
-void turn_word(string &s, int &pos)
+void turn_word(string s, int &pos)
 {
     if (pos == 0 && status == "normal")
         write_file << "<p>\n";
@@ -967,10 +1015,6 @@ int main(int argc, char *argv[])
             return 0;
         }
         generate();
-    }
-    else if (s == "watch")
-    {
-        watch();
     }
     else if (s == "turn")
     {
