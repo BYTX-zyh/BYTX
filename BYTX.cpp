@@ -151,7 +151,6 @@ void generate()
     for (int i = 0; i < markdown_file.size(); i++)
     {
         string markdown_file_name = markdown_file[i].substr(6, markdown_file[i].size() - 9);
-        debug(markdown_file_name);
         string html_file_name = "_file_html\\" + markdown_file_name + ".html";
         vector<string>::iterator f = find(html_file.begin(), html_file.end(), html_file_name);
         if (f != html_file.end())
@@ -160,7 +159,7 @@ void generate()
             strcpy(file, markdown_file[i].c_str());
             HANDLE hFile;
             TCHAR szCreationTime[30], szLastAccessTime[30], szLastWriteTime[30];
-            SYSTEMTIME stLocal_md,stLocal_html;
+            SYSTEMTIME stLocal_md, stLocal_html;
             hFile = CreateFile(file, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             GetFileTime(hFile, szCreationTime, szLastAccessTime, szLastWriteTime, stLocal_md);
             if (hFile == INVALID_HANDLE_VALUE)
@@ -169,10 +168,27 @@ void generate()
 
             strcpy(file, html_file_name.c_str());
             hFile = CreateFile(file, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-            GetFileTime(hFile, szCreationTime, szLastAccessTime, szLastWriteTime, stLocal_md);
+            GetFileTime(hFile, szCreationTime, szLastAccessTime, szLastWriteTime, stLocal_html);
             if (hFile == INVALID_HANDLE_VALUE)
                 return;
             CloseHandle(hFile);
+
+            if (stLocal_html.wYear > stLocal_md.wYear ||
+                stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth > stLocal_md.wMonth ||
+                stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth == stLocal_md.wMonth && stLocal_html.wDay > stLocal_md.wDay ||
+                stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth == stLocal_md.wMonth && stLocal_html.wDay == stLocal_md.wDay && stLocal_html.wHour > stLocal_md.wHour ||
+                stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth == stLocal_md.wMonth && stLocal_html.wDay == stLocal_md.wDay && stLocal_html.wHour == stLocal_md.wHour && stLocal_html.wMinute > stLocal_md.wMinute ||
+                stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth == stLocal_md.wMonth && stLocal_html.wDay == stLocal_md.wDay && stLocal_html.wHour == stLocal_md.wHour && stLocal_html.wMinute == stLocal_md.wMinute && stLocal_html.wSecond > stLocal_md.wSecond)
+            {
+                cout<<markdown_file_name<<endl;
+                continue;
+            }
+            else
+            {
+                cout<<"turn"<<endl;
+                string s = markdown_file_name + ".md";
+                turn(s);
+            }
         }
         else
         {
