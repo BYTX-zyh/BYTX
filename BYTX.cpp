@@ -91,6 +91,11 @@ void get_mark(string s, int pos, int end_pos);
 //change status and print some code such as <\ul>
 void change_status(string next_status);
 
+//处理无用的空格
+string skip_space(string &s);
+//check h1-h6
+bool check_html_h(string s,int &start_pos,int &next_pos);
+
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime, SYSTEMTIME &stLocal3)
 {
     FILETIME ftCreate, ftAccess, ftWrite;
@@ -470,6 +475,7 @@ void turn(string file_name)
         string s = get_one_line;
         bool task_if_check;
         string title_style;
+        int start_pos,end_pos;
         if (check_if_title(_file_file_name, s, line_cnt, title_style))
         {
             change_status("h");
@@ -503,7 +509,6 @@ void turn(string file_name)
         }
         else if (s.find("```") == 0 && check_code(_file_file_name, line_cnt, next_line))
         {
-            cout << "getcode\n";
             write_file << "<pre><code>\n";
             while (line_cnt != next_line - 1)
             {
@@ -516,6 +521,16 @@ void turn(string file_name)
             line_cnt++;
             write_file << "</code></pre>\n";
         }
+        else if(check_html_h(s,start_pos,end_pos))
+        {
+            s = skip_space(s);
+            for(int i=0;i<start_pos;)
+                turn_word(s,i);
+            for(int i=start_pos;i<=end_pos+4;i++)
+                write_file<<s[i];
+            for(int i=end_pos+5;i<s.size()-1;)
+                turn_word(s,i);
+        }
         else
         {
             int s_lenth = s.length();
@@ -525,6 +540,43 @@ void turn(string file_name)
     }
     write_file << "</body>\n";
     write_file << "</html>\n";
+}
+
+bool check_html_h(string s, int &start_pos, int &end_pos)
+{
+    s = skip_space(s);
+    if (s.size() <= 8)
+        return false;
+    string h[] = {"h1", "h2", "h3", "h4", "h5", "h6"};
+    for (int i = 0; i < 6; i++)
+    {
+        string x = "<" + h[i];
+        int pos = s.find(x);
+        start_pos = pos;
+        if (pos == s.npos||pos!=0)
+            continue;
+        pos = s.find('>', pos);
+        if (pos == s.npos)
+            continue;
+        x = "</" + h[i] + ">";
+        pos=s.find(x,pos);
+        if (pos != s.npos)
+        {
+            end_pos=pos;
+            return true;
+        }
+    }
+    return false;
+}
+
+string skip_space(string &s)
+{
+    string ss = "";
+    int cnt = 0;
+    for (int i = 0; i < s.size(); i++)
+        if (s[i] != ' ')
+            ss += s[i];
+    return ss;
 }
 
 void turn_code(string &s)
@@ -543,7 +595,7 @@ void turn_code(string &s)
         else
             write_file << s[i];
     }
-    write_file<<endl;
+    write_file << endl;
 }
 
 void change_status(string next_status)
