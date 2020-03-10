@@ -180,12 +180,12 @@ void generate()
                 stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth == stLocal_md.wMonth && stLocal_html.wDay == stLocal_md.wDay && stLocal_html.wHour == stLocal_md.wHour && stLocal_html.wMinute > stLocal_md.wMinute ||
                 stLocal_html.wYear == stLocal_md.wYear && stLocal_html.wMonth == stLocal_md.wMonth && stLocal_html.wDay == stLocal_md.wDay && stLocal_html.wHour == stLocal_md.wHour && stLocal_html.wMinute == stLocal_md.wMinute && stLocal_html.wSecond > stLocal_md.wSecond)
             {
-                cout<<markdown_file_name<<endl;
+                cout << markdown_file_name << endl;
                 continue;
             }
             else
             {
-                cout<<"turn"<<endl;
+                cout << "turn" << endl;
                 string s = markdown_file_name + ".md";
                 turn(s);
             }
@@ -813,6 +813,11 @@ void turn_word(string s, int &pos)
         write_file << s[pos + 1];
         pos += 2;
     }
+    else if (x == '=' && check_if_need_mark(s, pos, next_pos))
+    {
+        get_mark(s, pos, next_pos);
+        pos = next_pos + 1;
+    }
     else if (x == '!' && check_if_img(s, pos, next_pos))
     {
         write_file << "<img alt=\"";
@@ -854,11 +859,6 @@ void turn_word(string s, int &pos)
         // check if need turn to &
         pos++;
         write_file << transformation[x];
-    }
-    else if (x == '=' && check_if_need_mark(s, pos, next_pos))
-    {
-        get_mark(s, pos, next_pos);
-        pos = next_pos + 1;
     }
     else
     {
@@ -975,14 +975,10 @@ bool check_if_strong(char x, string &s, int pos, int &next_pos)
 
 bool check_if_need_mark(string &s, int now_pos, int &next_pos)
 {
-    if (now_pos != 0 && s[now_pos - 1] == '\\' || s[now_pos + 1] != '=')
+    if (now_pos != 0 && s[now_pos - 1] == '\\' || now_pos + 1 > s.size() - 1 || s[now_pos + 1] != '=')
         return false;
-    next_pos = s.find('=', now_pos + 2);
-    if (next_pos == s.npos)
-        return false;
-    if (next_pos + 1 < s.size() && s[next_pos + 1] != '=')
-        return false;
-    if (now_pos + 2 == next_pos)
+    next_pos = s.find("==", now_pos + 2);
+    if (next_pos == s.npos || now_pos + 2 == next_pos)
         return false;
     next_pos++;
     return true;
