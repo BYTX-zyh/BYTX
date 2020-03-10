@@ -64,7 +64,12 @@ bool check_hr(string s);
 //need a <hr/>
 void get_hr(string s);
 
+//check math
 bool check_math(const char *markdown_file_name, int now_line, int &next_line);
+//check code
+bool check_code(const char *markdown_file_name, int now_line, int &next_line);
+// turn code
+void turn_code(string &s);
 
 //check if reserved word and some other like ==mark==
 void turn_word(string s, int &pos);
@@ -496,6 +501,21 @@ void turn(string file_name)
                 line_cnt++;
             }
         }
+        else if (s.find("```") == 0 && check_code(_file_file_name, line_cnt, next_line))
+        {
+            cout << "getcode\n";
+            write_file << "<pre><code>\n";
+            while (line_cnt != next_line - 1)
+            {
+                read_file.getline(get_one_line, 1000);
+                string s = get_one_line;
+                turn_code(s);
+                line_cnt++;
+            }
+            read_file.getline(get_one_line, 1000);
+            line_cnt++;
+            write_file << "</code></pre>\n";
+        }
         else
         {
             int s_lenth = s.length();
@@ -505,6 +525,25 @@ void turn(string file_name)
     }
     write_file << "</body>\n";
     write_file << "</html>\n";
+}
+
+void turn_code(string &s)
+{
+    map<char, string> transformation;
+    transformation[' '] = "&#160;";
+    transformation['<'] = "&#60;";
+    transformation['>'] = "&#62;";
+    transformation['&'] = "&#38;";
+    transformation['\"'] = "&#34;";
+    transformation['\''] = "&#39;";
+    for (int i = 0; i < s.size(); i++)
+    {
+        if (transformation.find(s[i]) != transformation.end())
+            write_file << transformation[s[i]];
+        else
+            write_file << s[i];
+    }
+    write_file<<endl;
 }
 
 void change_status(string next_status)
@@ -745,6 +784,30 @@ bool check_hr(string s)
 void get_hr(string s)
 {
     write_file << "<hr />\n";
+}
+
+bool check_code(const char *markdown_file_name, int now_line, int &next_line)
+{
+    fstream code_cnt;
+    next_line = now_line;
+    char get_one_line[1000];
+    code_cnt.open(markdown_file_name);
+    while (now_line--)
+    {
+        code_cnt.getline(get_one_line, 1000);
+    }
+    while (code_cnt.getline(get_one_line, 1000))
+    {
+        next_line++;
+        string s = get_one_line;
+        if (s == "```")
+        {
+            code_cnt.close();
+            return true;
+        }
+    }
+    code_cnt.close();
+    return false;
 }
 
 bool check_math(const char *markdown_file_name, int now_line, int &next_line)
