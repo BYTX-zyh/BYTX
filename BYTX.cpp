@@ -94,7 +94,9 @@ void change_status(string next_status);
 //处理无用的空格
 string skip_space(string &s);
 //check h1-h6
-bool check_html_h(string s,int &start_pos,int &next_pos);
+bool check_html_h(string s, int &start_pos, int &next_pos);
+//check <hr> or <hr/> 在检测到<的时候进行检测
+bool check_html_hr(string s, int pos, int &next_pos);
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime, SYSTEMTIME &stLocal3)
 {
@@ -470,12 +472,11 @@ void turn(string file_name)
     while (read_file.getline(get_one_line, 1000))
     {
         line_cnt++;
-
         int pos = 0;
         string s = get_one_line;
         bool task_if_check;
         string title_style;
-        int start_pos,end_pos;
+        int start_pos, end_pos;
         if (check_if_title(_file_file_name, s, line_cnt, title_style))
         {
             change_status("h");
@@ -521,15 +522,15 @@ void turn(string file_name)
             line_cnt++;
             write_file << "</code></pre>\n";
         }
-        else if(check_html_h(s,start_pos,end_pos))
+        else if (check_html_h(s, start_pos, end_pos))
         {
             s = skip_space(s);
-            for(int i=0;i<start_pos;)
-                turn_word(s,i);
-            for(int i=start_pos;i<=end_pos+4;i++)
-                write_file<<s[i];
-            for(int i=end_pos+5;i<s.size()-1;)
-                turn_word(s,i);
+            for (int i = 0; i < start_pos;)
+                turn_word(s, i);
+            for (int i = start_pos; i <= end_pos + 4; i++)
+                write_file << s[i];
+            for (int i = end_pos + 5; i < s.size() - 1;)
+                turn_word(s, i);
         }
         else
         {
@@ -553,16 +554,16 @@ bool check_html_h(string s, int &start_pos, int &end_pos)
         string x = "<" + h[i];
         int pos = s.find(x);
         start_pos = pos;
-        if (pos == s.npos||pos!=0)
+        if (pos == s.npos || pos != 0)
             continue;
         pos = s.find('>', pos);
         if (pos == s.npos)
             continue;
         x = "</" + h[i] + ">";
-        pos=s.find(x,pos);
+        pos = s.find(x, pos);
         if (pos != s.npos)
         {
-            end_pos=pos;
+            end_pos = pos;
             return true;
         }
     }
@@ -922,7 +923,6 @@ void turn_word(string s, int &pos)
     transformation['&'] = "&#38;";
     transformation['\"'] = "&#34;";
     transformation['\''] = "&#39;";
-
     if (x == '\\' && s.size() - 1 >= pos + 1 && change_word.find(s[pos + 1]) != change_word.end())
     {
         write_file << s[pos + 1];
@@ -969,7 +969,13 @@ void turn_word(string s, int &pos)
             write_file << s[i];
         pos = next_pos + 1;
     }
-    else if (transformation.find(x) != transformation.end())
+    else if (x == '<' && check_html_hr(s, pos, next_pos))
+    {
+        for(int i=pos;i<=next_pos;i++)
+            write_file<<s[i];
+        pos=next_pos+1;
+    }
+     else if (transformation.find(x) != transformation.end())
     {
         // check if need turn to &
         pos++;
@@ -984,6 +990,34 @@ void turn_word(string s, int &pos)
     if (pos > s.size() - 1 && status == "normal")
         write_file << "</p>\n";
     return;
+}
+
+bool check_html_hr(string s, int pos, int &next_pos)
+{
+    debug(pos);
+    debug(s.find("<hr",pos));
+    if (s.find("<hr",pos)==pos)
+    {
+        int cnt=0;
+        for(int i=pos;i<s.size()-1;i++)
+        {
+            if(s[i]=='\"')
+            {
+                while (true)
+                {
+                    i++;
+                    if(s[i]=='\"'||i>=s.size()-1)
+                        break;
+                }
+            }
+            if(s[i]=='/'&&s[i+1]=='>')
+            {
+                next_pos=i+1;
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 bool check_if_inline_math(const string &s, int pos, int &next_pos)
