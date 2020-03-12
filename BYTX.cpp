@@ -95,8 +95,10 @@ void change_status(string next_status);
 string skip_space(string &s);
 //check h1-h6
 bool check_html_h(string s, int &start_pos, int &next_pos);
-//check <hr> or <hr/> 在检测到<的时候进行检测
-bool check_html_hr(string s, int pos, int &next_pos);
+//check such as <hr/> 在检测到<的时候进行检测
+bool check_html_self_closing(string s, int pos, int &next_pos);
+// check like <p>
+bool check_html_notself_closing(string s, int pos, int &next_pos);
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime, SYSTEMTIME &stLocal3)
 {
@@ -969,13 +971,19 @@ void turn_word(string s, int &pos)
             write_file << s[i];
         pos = next_pos + 1;
     }
-    else if (x == '<' && check_html_hr(s, pos, next_pos))
+    else if (x == '<' && check_html_self_closing(s, pos, next_pos))
     {
-        for(int i=pos;i<=next_pos;i++)
-            write_file<<s[i];
-        pos=next_pos+1;
+        for (int i = pos; i <= next_pos; i++)
+            write_file << s[i];
+        pos = next_pos + 1;
     }
-     else if (transformation.find(x) != transformation.end())
+    else if (x == '<' && check_html_notself_closing(s, pos, next_pos))
+    {
+        for (int i = pos; i <= next_pos; i++)
+            write_file << s[i];
+        pos = next_pos + 1;
+    }
+    else if (transformation.find(x) != transformation.end())
     {
         // check if need turn to &
         pos++;
@@ -992,27 +1000,79 @@ void turn_word(string s, int &pos)
     return;
 }
 
-bool check_html_hr(string s, int pos, int &next_pos)
+bool check_html_notself_closing(string s, int pos, int &next_pos)
 {
-    debug(pos);
-    debug(s.find("<hr",pos));
-    if (s.find("<hr",pos)==pos)
+    string label[] ={"p","button","abbr","b","bdo","i","ins","mark","s","small","strong","sub","sup","u","a"};
+    for (int i = 0; i < 15; i++)
     {
-        int cnt=0;
-        for(int i=pos;i<s.size()-1;i++)
+        bool flag = false;
+        string front = "<" + label[i];
+        string behind = "</" + label[i];
+        if (s.find(front, pos) != pos)
+            continue;
+        for (; pos < s.size(); pos++)
         {
-            if(s[i]=='\"')
+            if (s[pos] == '\"')
+                while (true)
+                {
+                    pos++;
+                    if (s[pos] == '\"' || pos >= s.size() - 1)
+                        break;
+                }
+            if (s[pos] == '>')
+            {
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            continue;
+        flag = false; pos++;
+        debug(pos);
+        pos=s.find(behind,pos);
+        if (pos == s.npos)
+            continue;
+        for (; pos < s.size(); pos++)
+        {
+            if (s[pos] == '\"')
+                while (true)
+                {
+                    pos++;
+                    if (s[pos] == '\"' || pos >= s.size() - 1)
+                        break;
+                }
+            if (s[pos] == '>')
+            {
+                flag = true;
+                break;
+            }
+        }
+        if (flag)
+        {
+            next_pos = pos;
+            return true;
+        }
+    }
+    return false;
+}
+bool check_html_self_closing(string s, int pos, int &next_pos)
+{
+    if (s.find("<hr", pos) == pos || s.find("<img", pos) == pos || s.find("<br", pos) == pos)
+    {
+        for (int i = pos; i < s.size() - 1; i++)
+        {
+            if (s[i] == '\"')
             {
                 while (true)
                 {
                     i++;
-                    if(s[i]=='\"'||i>=s.size()-1)
+                    if (s[i] == '\"' || i >= s.size() - 1)
                         break;
                 }
             }
-            if(s[i]=='/'&&s[i+1]=='>')
+            if (s[i] == '/' && s[i + 1] == '>')
             {
-                next_pos=i+1;
+                next_pos = i + 1;
                 return true;
             }
         }
