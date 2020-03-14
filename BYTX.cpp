@@ -99,6 +99,8 @@ bool check_html_h(string s, int &start_pos, int &next_pos);
 bool check_html_self_closing(string s, int pos, int &next_pos);
 // check like <p>
 bool check_html_notself_closing(string s, int pos, int &next_pos);
+//table
+bool check_html_table(const char *markdown_file, string s, int line_cnt, int &next_line);
 
 bool GetFileTime(HANDLE hFile, LPSTR lpszCreationTime, LPSTR lpszLastAccessTime, LPSTR lpszLastWriteTime, SYSTEMTIME &stLocal3)
 {
@@ -534,6 +536,36 @@ void turn(string file_name)
             for (int i = end_pos + 5; i < s.size() - 1;)
                 turn_word(s, i);
         }
+        else if (s[0] == '|' && s[s.size() - 1] == '|' && check_html_table(_file_file_name, s, line_cnt, next_line))
+        {
+            cout << "get table\n";
+            write_file << "<table>\n<tr>\n<td>";
+            for (int i = 1; i < s.size();)
+            {
+                if (s[i] == '|' && s[i - 1] != '\\')
+                    write_file << "</td><td>", i++;
+                else
+                    turn_word(s, i);
+            }
+            write_file << "</td></tr>\n";
+            read_file.getline(get_one_line, 1000);
+            for (int i = line_cnt + 2; i < next_line; i++)
+            {
+                read_file.getline(get_one_line, 1000);
+                s = get_one_line;
+                write_file << "<tr>\n<td>";
+                for (int i = 1; i < s.size();)
+                {
+                    if (s[i] == '|' && s[i - 1] != '\\')
+                        write_file << "</td><td>", i++;
+                    else
+                        turn_word(s, i);
+                }
+                write_file << "</td></tr>\n";
+            }
+            write_file << "</table>\n";
+            line_cnt = next_line - 1;
+        }
         else
         {
             int s_lenth = s.length();
@@ -543,6 +575,70 @@ void turn(string file_name)
     }
     write_file << "</body>\n";
     write_file << "</html>\n";
+}
+
+bool check_html_table(const char *markdown_file, string s, int line_cnt, int &next_line)
+{
+    fstream table_cnt;
+    next_line = line_cnt;
+    char get_one_line[1000];
+    debug(line_cnt);
+    table_cnt.open(markdown_file);
+    while (line_cnt--)
+    {
+        table_cnt.getline(get_one_line, 1000);
+    }
+    table_cnt.getline(get_one_line, 1000);
+    next_line++;
+    string ss;
+    ss = get_one_line;
+    cout << ss << endl;
+    int cnt_1 = 0, cnt_2 = 0, cnt_3 = 0;
+    if (ss[0] != '|' || ss[ss.size() - 1] != '|')
+        return false;
+    // Test;
+
+    for (int i = 0; i < ss.size(); i++)
+    {
+        if (ss[i] == ' ')
+            continue;
+        if (ss[i] == '|')
+            cnt_1++;
+        else if (ss[i] == ':')
+            cnt_2++;
+        else if (ss[i] == '-')
+            cnt_3++;
+        else
+        {
+            table_cnt.close();
+            return false;
+        }
+    }
+    // Test;
+    while (table_cnt.getline(get_one_line, 1000))
+    {
+        next_line++;
+        int cnt = 0;
+        ss = get_one_line;
+        if (ss[0] != '|' || ss[ss.size() - 1] != '|')
+        {
+            table_cnt.close();
+            // debug(next_line);
+            return true;
+        }
+        for (int i = 0; i < ss.size(); i++)
+        {
+            if (ss[i] == '|' && (i == 0 || i >= 1 && ss[i - 1] != '\\'))
+                cnt++;
+        }
+        if (cnt != cnt_1)
+        {
+            table_cnt.close();
+            return true;
+        }
+    }
+    table_cnt.close();
+    return false;
 }
 
 bool check_html_h(string s, int &start_pos, int &end_pos)
@@ -1002,7 +1098,7 @@ void turn_word(string s, int &pos)
 
 bool check_html_notself_closing(string s, int pos, int &next_pos)
 {
-    string label[] ={"p","button","abbr","b","bdo","i","ins","mark","s","small","strong","sub","sup","u","a"};
+    string label[] = {"p", "button", "abbr", "b", "bdo", "i", "ins", "mark", "s", "small", "strong", "sub", "sup", "u", "a"};
     for (int i = 0; i < 15; i++)
     {
         bool flag = false;
@@ -1027,9 +1123,9 @@ bool check_html_notself_closing(string s, int pos, int &next_pos)
         }
         if (!flag)
             continue;
-        flag = false; pos++;
-        debug(pos);
-        pos=s.find(behind,pos);
+        flag = false;
+        pos++;
+        pos = s.find(behind, pos);
         if (pos == s.npos)
             continue;
         for (; pos < s.size(); pos++)
